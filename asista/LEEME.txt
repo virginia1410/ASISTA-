@@ -1,0 +1,101 @@
+===============================================================================
+       SISTEMA ASISTA - GUIA DE INSTALACION RAPIDA EN CUALQUIER LAPTOP
+           U.E.P. Prof. Aristobulo Isturiz (Cabimas, Estado Zulia)
+===============================================================================
+
+¡Hola! Este sistema es 100% PORTABLE Y AUTONOMO.
+NO requiere instalar MySQL, XAMPP, phpMyAdmin ni configurar bases de datos.
+La base de datos SQLite ya viene integrada y lista para usar.
+
+===============================================================================
+PASOS PARA INSTALAR Y ABRIR EN TU LAPTOP (SOLO 3 PASOS)
+===============================================================================
+
+PASO 1: DESCOMPRIMIR
+  - Haz clic derecho sobre el archivo "Asista_Portable_SQLite.rar" 
+    (o "Asista_Portable_WhatsApp.zip") y selecciona "Extraer aqui" 
+    o "Extraer en Asista_Sistema".
+  - Entra a la carpeta descomprimida "Asista_Sistema".
+
+PASO 2: INSTALAR CON UN CLIC
+  - Haz doble clic sobre el archivo:
+         -->  "INSTALAR EN LAPTOP.bat"
+  - Se abrira una ventana de consola que automaticamente:
+      * Comprobara que tengas Python (si falta, te indicara el enlace oficial).
+      * Creara el entorno del sistema.
+      * Descargara e instalara las librerias visuales (CustomTkinter, Pillow, etc.).
+      * Creara de forma automatica en tu Escritorio el acceso directo oficial 
+        con el icono del colegio: [ ASISTA - Iniciar Sistema ].
+
+PASO 3: INICIAR EL SISTEMA
+  - Al terminar la instalacion, ya puedes abrir el sistema haciendo doble clic 
+    en el icono de tu propio Escritorio:
+         -->  [ ASISTA - Iniciar Sistema ]
+    (Tambien puedes abrirlo ejecutando "INICIAR.bat" dentro de la carpeta).
+
+===============================================================================
+USUARIOS Y CLAVES PARA LA DEMOSTRACION Y DEFENSA
+===============================================================================
+
+1. ROL DIRECTORA (Maximo nivel institucional y control total):
+   - Usuario:    directora
+   - Clave:      Carmen123.
+   * Permisos: Acceso total a auditoria, bitacoras, configuracion, reportes y respaldos.
+
+2. ROL ADMINISTRADOR (Gestion academica diaria):
+   - Usuario:    admin
+   - Clave:      Admin123.
+   * Permisos: Registro de estudiantes, docentes, secciones, carnets, reportes y matriculas.
+
+3. ROL DOCENTE / PROFESOR (Para acceso desde celular o laptop):
+   - Usuario:    prof.navarro   (o tambien: recepcion)
+   - Clave:      Asista2026*
+   * Permisos: Asistencia por cohorte, pase de lista y marcaje por cedula/camara.
+
+===============================================================================
+USO DESDE TELEFONOS CELULARES (MODULO MOVIL / PORTERIA Y PROFESOR)
+===============================================================================
+
+El sistema incluye un servidor autonomo que permite a los profesores y a la 
+porteria marcar asistencia desde sus telefonos inteligentes.
+
+1. Conecta la laptop y los telefonos a la MISMA red Wi-Fi.
+2. Si es la primera vez, haz doble clic en:
+   "Habilitar_Acceso_Celular.bat" (permite el trafico Wi-Fi en el Firewall).
+3. En el navegador del telefono (Chrome, Safari, etc.), abre la direccion IP 
+   de la laptop:
+
+   * Portal Docente Sabatino:
+     http://TU_IP_LOCAL:8080/profesor
+     (Ejemplo: http://192.168.0.101:8080/profesor)
+
+   * Porteria General (Kiosco de entrada):
+     http://TU_IP_LOCAL:8080/
+     (Ejemplo: http://192.168.0.101:8080/)
+
+4. ESCANEO CON CAMARA EN EL CELULAR:
+   - Toca el boton azul "Escanear con Camara".
+   - El telefono abrira directamente la camara nativa para tomar una foto 
+     al carnet (codigo serial).
+   - Al capturar la foto, el sistema decodifica el codigo de barras en menos 
+     de un segundo y registra la asistencia inmediatamente.
+
+===============================================================================
+CARNETS ESTUDIANTILES Y REPORTES
+===============================================================================
+- Los carnets se generan en PDF con diseno Aesthetic Luxury, marco para foto 
+  y Codigo Serial Code 128 exclusivo (sin codigo QR).
+- Los reportes de cierre diario, matriculas y actas de cohorte se generan 
+  en PDF y Excel con auto-ajuste de columnas multilineas sin solapamiento.
+
+===============================================================================
+REQUISITOS DEL SISTEMA
+===============================================================================
+- Sistema Operativo: Windows 10 u 11 (64 bits).
+- Python: Version 3.10, 3.11, 3.12, 3.13 o superior.
+  (Descarga oficial gratuita: https://www.python.org/downloads/)
+  *IMPORTANTE:* Al instalar Python, marca la casilla "Add Python to PATH".
+- Conexion a Internet: Solo se requiere durante los 30 segundos del PASO 2 
+  para descargar las librerias. Una vez instalado, el sistema funciona 
+  completamente OFFLINE (sin internet).
+===============================================================================

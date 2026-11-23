@@ -1,0 +1,82 @@
+===============================================================================
+       SISTEMA ASISTA - GUIA DE INSTALACION RAPIDA EN CUALQUIER LAPTOP
+           U.E.P. Prof. Aristobulo Isturiz (Cabimas, Estado Zulia)
+       Ultima Actualizacion: 23 de Noviembre de 2026 - 11:05 AM
+===============================================================================
+
+Este paquete contiene la version mas reciente y actualizada del sistema ASISTA,
+preparada para ejecutarse de forma 100% PORTABLE, rapida y limpia en cualquier
+laptop con Windows.
+
+NO requiere instalar MySQL, XAMPP, phpMyAdmin ni configurar servidores externos.
+La base de datos SQLite y el servicio web ya vienen completamente integrados.
+
+-------------------------------------------------------------------------------
+ESTRUCTURA DE ESTA CARPETA:
+-------------------------------------------------------------------------------
+  [Carpeta] asista\                  --> Subcarpeta que contiene todo el codigo del sistema.
+  [Archivo] INSTALAR EN LAPTOP.bat   --> Instalador automatizado de 1 solo clic.
+  [Archivo] INICIAR SISTEMA.bat      --> Acceso para iniciar el sistema directamente.
+  [Archivo] INSTRUCCIONES.txt        --> Esta guia con pasos y credenciales de acceso.
+  [Archivo] Habilitar_Acceso.bat     --> Abre los puertos en Windows Firewall para celulares.
+
+===============================================================================
+PASOS PARA INSTALAR Y ABRIR EN TU LAPTOP (SOLO 2 PASOS)
+===============================================================================
+
+PASO 1: INSTALAR CON UN SOLO CLIC
+  1. Haz doble clic sobre el archivo:
+         >> "INSTALAR EN LAPTOP.bat"
+  2. El instalador realizara automaticamente todo por ti:
+       * Verifica la presencia de Python en la computadora.
+       * Configura el entorno virtual (.venv) e instala las librerias visuales
+         (CustomTkinter, OpenCV, Pillow, OpenPyXL, etc.).
+       * Verifica la integridad de la base de datos portable SQLite.
+       * Crea en tu Escritorio el acceso directo oficial con el logo del colegio:
+         [ ASISTA - Iniciar Sistema ]
+
+PASO 2: INICIAR EL SISTEMA
+  - Haz doble clic en el acceso directo creado en tu Escritorio:
+         >> [ ASISTA - Iniciar Sistema ]
+  - El sistema abrira inmediatamente la interfaz grafica y levantara en segundo
+    plano el servidor de conexion para celulares.
+
+===============================================================================
+USUARIOS Y CLAVES PARA LA DEMOSTRACION Y DEFENSA
+===============================================================================
+
+1. ROL DIRECTORA (Control total institucional):
+   - Usuario:    directora
+   - Clave:      Carmen123.
+   * Modulos: Auditoria, bitacoras de cambios, configuracion y reportes globales.
+
+2. ROL ADMINISTRADOR (Gestion academica diaria):
+   - Usuario:    admin
+   - Clave:      Admin123.
+   * Modulos: Estudiantes, docentes, secciones, matriculas y generacion de carnets.
+
+3. ROL DOCENTE / PROFESOR (Marcaje y control de aula):
+   - Usuario:    prof.navarro   (o tambien: recepcion)
+   - Clave:      Asista2026*
+   * Modulos: Marcaje por camara/codigo, pase de lista y asistencia por cohorte.
+
+===============================================================================
+CONEXION DE CELULARES Y ESCANEO EN TIEMPO REAL (CAMARA EN VIVO)
+===============================================================================
+
+1. Conecta la laptop y los celulares a la MISMA red Wi-Fi.
+2. Si es la primera vez en esa laptop, ejecuta con doble clic:
+   "Habilitar_Acceso_Celular.bat" (habilita los puertos en el Firewall).
+3. En el sistema principal de la laptop, toca el boton azul "📱 Movil Docente".
+4. Veras el codigo QR configurado en:
+   [ 📷 Camara en Vivo (HTTPS :8443) ]
+5. Escanea el codigo QR con tu celular:
+   - Al entrar por primera vez, el navegador dira "La conexion no es privada".
+   - Toca en "Configuracion avanzada" y luego en "Acceder a... (no seguro)".
+   - Toca "Permitir" cuando te pida acceso a la camara.
+   - ¡Listo! La camara se abrira transmitiendo video continuo en tiempo real,
+     escaneando y marcando automaticamente cada carnet sin necesidad de tomar fotos.
+
+===============================================================================
+                           SISTEMA 100% OPERATIVO
+===============================================================================

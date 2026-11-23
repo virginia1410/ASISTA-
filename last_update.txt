@@ -1,0 +1,1 @@
+Última actualización: 2026-11-23 11:05:00 -04:00 (Soporte Dual HTTPS/HTTP para Escáner en Tiempo Real y Limpieza de Sockets)
