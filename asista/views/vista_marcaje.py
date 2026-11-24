@@ -8,7 +8,7 @@ from db import fmt_hora, resolver_turno_persona
 from tema import (
     ACENTO, AVISO, ESTADO_COLOR, F_TEXTO, F_TITULO, OK, PRIMARIO, PRIMARIO_H, SUAVE, TEXTO
 )
-from .ui_utils import Vista, seguro, tarjeta, campo, boton, etiqueta, area, chip
+from .ui_utils import Vista, seguro, tarjeta, campo, boton, etiqueta, area, chip, feedback_boton
 import contingencia
 
 
@@ -136,9 +136,14 @@ class Marcaje(Vista):
                                             ("Registrar Salida", "primario", self.salida),
                                             ("Marcar Ausente", "acento", self.ausente)]):
             bt.grid_columnconfigure(i, weight=1, uniform="b")
-            boton(bt, t, tipo, cmd, height=42).grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 8, 0))
+            btn = boton(bt, t, tipo, cmd, height=42)
+            btn.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 8, 0))
+            setattr(self, ("btn_entrada", "btn_salida", "btn_ausente")[i], btn)
 
-        self.msg = ctk.CTkLabel(res, text="", font=(F_TEXTO, 13, "bold"), anchor="w", wraplength=550)
+        self.msg = ctk.CTkLabel(
+            res, text="", font=(F_TEXTO, 13, "bold"), anchor="w", wraplength=550,
+            corner_radius=10, height=38
+        )
         self.msg.pack(fill="x", padx=20, pady=(4, 14))
 
         # Panel lateral de reglas y estatus
@@ -264,7 +269,22 @@ class Marcaje(Vista):
             self.l_horarios_txt.configure(text=txt)
 
     def _aviso(self, texto, color):
-        self.msg.configure(text=texto, text_color=color)
+        if isinstance(color, tuple):
+            color_texto = color[0]
+        else:
+            color_texto = color
+
+        if not texto:
+            self.msg.configure(text="", fg_color="transparent")
+            return
+
+        if color_texto in (OK[0], OK[1]):
+            fondo, borde = ("#DCFCE7", "#86EFAC")
+        elif color_texto in (AVISO[0], AVISO[1]):
+            fondo, borde = ("#FEF3C7", "#FCD34D")
+        else:
+            fondo, borde = ("#E0F2FE", "#7DD3FC")
+        self.msg.configure(text=f"  {texto}", text_color=color_texto, fg_color=fondo)
 
     def procesar_lector(self):
         """Punto de entrada cuando se escanea un carnet o se presiona Enter."""
@@ -450,6 +470,7 @@ class Marcaje(Vista):
                                   obs or (ex["observaciones"] if ex else ""), config.USUARIO_ID, existe=bool(ex))
         _beep_exito()
         self._listo(f"Entrada registrada a las {hora:%H:%M} · {estado} (Turno {turno_activo})", OK if estado == "Presente" else AVISO)
+        feedback_boton(self.btn_entrada, "✓ Entrada registrada")
 
     @seguro
     def salida(self):
@@ -474,6 +495,7 @@ class Marcaje(Vista):
         self.db.registrar_salida(ex["id_asistencia"], hora, estado, obs_final)
         _beep_exito()
         self._listo(f"Salida registrada a las {hora:%H:%M} (Turno {turno_activo})", AVISO if temprana else OK)
+        feedback_boton(self.btn_salida, "✓ Salida registrada")
 
     @seguro
     def ausente(self):
@@ -482,3 +504,4 @@ class Marcaje(Vista):
             raise UserWarning("Esta persona ya tiene un registro hoy.")
         self.db.registrar_ausencia(p["id_persona"], date.today(), self._obs(), config.USUARIO_ID)
         self._listo("Ausencia registrada", ACENTO)
+        feedback_boton(self.btn_ausente, "✓ Ausencia registrada", tipo="acento")

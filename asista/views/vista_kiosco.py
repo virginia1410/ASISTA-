@@ -705,6 +705,12 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
                 fg_color=color_badge,
                 text_color=color_txt
             )
+            self.card_res.configure(border_color="#10B981")
+            self.lbl_cam_feedback.configure(
+                text=f"✓ {res['tipo']} registrado · {p_nombre}",
+                text_color="#059669"
+            )
+            self.after(1800, lambda: self.card_res.configure(border_color=BORDE[0]))
             self.cargar_feed_hoy()
 
         elif res.get("ya_completado"):
@@ -713,6 +719,8 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             self.l_nombre.configure(text=res["persona"])
             self.l_detalle.configure(text="Esta persona ya completó tanto su entrada como su salida de hoy.")
             self.badge_estado.configure(text="JORNADA LISTA", fg_color="#FEF3C7", text_color="#92400E")
+            self.card_res.configure(border_color="#F59E0B")
+            self.lbl_cam_feedback.configure(text="⚠ La jornada de hoy ya está completa", text_color="#92400E")
             self.cargar_feed_hoy()
 
         else:
@@ -721,6 +729,8 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             self.l_nombre.configure(text=f"Cédula {cedula} no encontrada")
             self.l_detalle.configure(text="El carnet no se encuentra registrado en el sistema escolar.")
             self.badge_estado.configure(text="NO REGISTRADO", fg_color="#FEE2E2", text_color="#991B1B")
+            self.card_res.configure(border_color="#EF4444")
+            self.lbl_cam_feedback.configure(text="✕ Carnet no reconocido", text_color="#DC2626")
 
     def _actualizar_reloj(self):
         ahora = datetime.now()

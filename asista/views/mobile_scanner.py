@@ -24,6 +24,8 @@ import customtkinter as ctk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
+from tema import BG, BORDE, CARD, F_TEXTO, F_TITULO, PRIMARIO, SUAVE, TEXTO
+
 # ---------------------------------------------------------------------------
 # Decodificador reutilizable (copia de `decodificar_imagen_carnet` del
 # vista_kiosco). Devuelve (texto, posición, backend) o (None, None, None).
@@ -109,9 +111,10 @@ class MobileScannerDialog(ctk.CTkToplevel):
     """
 
     def __init__(self, master, on_success):
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color=BG[0] if isinstance(BG, tuple) else BG)
         self.title("Escáner de código – Asista (móvil)")
-        self.geometry("480x360")
+        self.geometry("560x520")
+        self.minsize(520, 480)
         self.resizable(False, False)
         self.transient(master.winfo_toplevel())
         self.after(150, self.grab_set)
@@ -120,11 +123,39 @@ class MobileScannerDialog(ctk.CTkToplevel):
         self._running = False
         self._thread = None
 
-        # UI mínima: etiqueta + canvas para mostrar frame
-        self.lbl = ctk.CTkLabel(self, text="Apunte el carnet a la cámara…", font=("Helvetica", 12))
-        self.lbl.pack(pady=4)
-        self.canvas = ctk.CTkCanvas(self, width=440, height=300, bg="black")
-        self.canvas.pack()
+        header = ctk.CTkFrame(
+            self,
+            fg_color=PRIMARIO[0] if isinstance(PRIMARIO, tuple) else PRIMARIO,
+            corner_radius=0
+        )
+        header.pack(fill="x")
+        ctk.CTkLabel(
+            header, text="Escáner de carnet",
+            font=(F_TITULO, 22, "bold"), text_color="white"
+        ).pack(padx=24, pady=(16, 2), anchor="w")
+        self.lbl = ctk.CTkLabel(
+            header, text="Apunte el código hacia la cámara",
+            font=(F_TEXTO, 12), text_color="#D6E6FF"
+        )
+        self.lbl.pack(padx=24, pady=(0, 14), anchor="w")
+
+        visor = ctk.CTkFrame(
+            self,
+            fg_color=CARD[0] if isinstance(CARD, tuple) else CARD,
+            corner_radius=18,
+            border_width=1,
+            border_color=BORDE[0] if isinstance(BORDE, tuple) else BORDE
+        )
+        visor.pack(fill="both", expand=True, padx=20, pady=16)
+        self.canvas = ctk.CTkCanvas(visor, width=500, height=360, bg="#111827", highlightthickness=0)
+        self.canvas.pack(padx=12, pady=12)
+
+        self.lbl_estado = ctk.CTkLabel(
+            visor, text="● Cámara activa · esperando carnet",
+            font=(F_TEXTO, 12, "bold"), text_color="#059669",
+            fg_color="#DCFCE7", corner_radius=10
+        )
+        self.lbl_estado.pack(fill="x", padx=12, pady=(0, 12))
 
         self._start_camera()
         self.protocol("WM_DELETE_WINDOW", self._cerrar)
@@ -148,7 +179,7 @@ class MobileScannerDialog(ctk.CTkToplevel):
             # Mostrar frame en canvas (convertir a PhotoImage)
             img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img_pil = Image.fromarray(img_rgb)
-            img_tk = ImageTk.PhotoImage(img_pil.resize((440, 300)))
+            img_tk = ImageTk.PhotoImage(img_pil.resize((500, 360)))
             # tkinter requiere mantener referencia
             self.canvas.img = img_tk
             self.canvas.create_image(0, 0, anchor="nw", image=img_tk)
@@ -162,9 +193,10 @@ class MobileScannerDialog(ctk.CTkToplevel):
             time.sleep(0.03)
 
     def _notify_success(self, codigo):
+        self.lbl_estado.configure(text=f"✓ Código leído: {codigo}", text_color="#059669", fg_color="#DCFCE7")
         if callable(self.on_success):
             self.on_success(codigo)
-        self._cerrar()
+        self.after(450, self._cerrar)
 
     def _cerrar(self):
         self._running = False

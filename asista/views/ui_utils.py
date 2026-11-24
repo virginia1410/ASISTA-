@@ -145,6 +145,32 @@ def boton(parent, texto, tipo, comando, **kw):
     return ctk.CTkButton(parent, **params)
 
 
+def feedback_boton(widget, texto="✓ Registrado", duracion=1600, tipo="ok"):
+    """Cambia temporalmente un botón para confirmar una acción sin alterar su comando."""
+    if not widget or not widget.winfo_exists():
+        return
+    texto_original = widget.cget("text")
+    fg_original = widget.cget("fg_color")
+    hover_original = widget.cget("hover_color")
+    texto_color_original = widget.cget("text_color")
+
+    estilo = ESTILOS_BOTON.get(tipo, ESTILOS_BOTON["ok"])
+    fg, hover, texto_color, _, _ = estilo
+    widget.configure(text=texto, fg_color=fg, hover_color=hover, text_color=texto_color, state="disabled")
+
+    def restaurar():
+        if widget.winfo_exists():
+            widget.configure(
+                text=texto_original,
+                fg_color=fg_original,
+                hover_color=hover_original,
+                text_color=texto_color_original,
+                state="normal"
+            )
+
+    widget.after(duracion, restaurar)
+
+
 def tarjeta(parent, **kw):
     return ctk.CTkFrame(parent, fg_color=CARD, corner_radius=20, border_width=1, border_color=BORDE, **kw)
 
