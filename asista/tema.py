@@ -8,12 +8,14 @@ from PIL import Image, ImageDraw
 NOMBRE_SISTEMA = "Asista"
 LEMA = "CONTROL DE ASISTENCIAS"
 
-# --- Colores de marca Institucional (Tecnología y Academia) -------------------
-NAVY = "#0F2042"          # Azul marino institucional profundo
-NAVY_OSC = "#0A1428"      # Azul noche oscuro (para contrastes, degradados)
-TURQUESA = "#00B4D8"      # Turquesa / Cyan vibrante de tecnología
-TURQUESA_OSC = "#0096B7"  # Turquesa hover
-BLANCO = "#FFFFFF"
+# --- Colores de marca Institucional (Navy, cian y tonos mate) -----------------
+NAVY = "#040444"
+NAVY_OSC = "#08082D"
+TURQUESA = "#56E1E8"
+TURQUESA_OSC = "#35C8D1"
+BURDEOS = "#70283D"
+BURDEOS_OSC = "#542033"
+BLANCO = "#F3EFE8"
 
 # Compatibilidad con módulos existentes que importan MORADO o NARANJA
 MORADO = NAVY
@@ -21,20 +23,25 @@ MORADO_OSC = NAVY_OSC
 NARANJA = TURQUESA
 
 # Pares (modo claro, modo oscuro) para CustomTkinter
-PRIMARIO = (NAVY, "#1A3668")
-PRIMARIO_H = (NAVY_OSC, "#244A8F")
-ACENTO = (TURQUESA, "#06B6D4")
-ACENTO_H = (TURQUESA_OSC, "#00A8CC")
-OK = ("#0F9F6E", "#34D399")
-OK_H = ("#0B7D56", "#10B981")
-AVISO = ("#E8890C", "#FBBF24")
-BG = ("#F0F4F8", "#0A1428")            # Fondo de la aplicación (Slate claro / Navy oscuro)
-CARD = ("#FFFFFF", "#0F2042")          # Tarjetas (Blanco puro / Navy Blue contenedor)
-BORDE = ("#D9E2EC", "#1E3A6D")         # Bordes sutiles
-TEXTO = ("#0A192F", "#F0F4F8")         # Texto de alto contraste
-SUAVE = ("#627D98", "#9FB3C8")         # Texto secundario
-SUAVE_BG = ("#E2E8F0", "#162C55")      # Campos, chips, fondos tenues
-ESTADO_COLOR = {"Presente": OK, "Retraso": AVISO, "Salida Temprana": AVISO, "Ausente": ("#DC2626", "#EF4444")}
+PRIMARIO = (NAVY, NAVY)
+PRIMARIO_H = (NAVY_OSC, NAVY_OSC)
+ACENTO = (TURQUESA, TURQUESA)
+ACENTO_H = (TURQUESA_OSC, TURQUESA_OSC)
+OK = (TURQUESA, TURQUESA)
+OK_H = (TURQUESA_OSC, TURQUESA_OSC)
+AVISO = (BURDEOS, BURDEOS)
+BG = (NAVY, NAVY)
+CARD = ("#12131B", "#12131B")
+BORDE = ("#203C44", "#203C44")
+TEXTO = (BLANCO, BLANCO)
+SUAVE = ("#AAA6A1", "#AAA6A1")
+SUAVE_BG = ("#1B1A21", "#1B1A21")
+ESTADO_COLOR = {
+    "Presente": OK,
+    "Retraso": AVISO,
+    "Salida Temprana": AVISO,
+    "Ausente": AVISO,
+}
 
 # --- Tipografías (Georgia da el toque editorial/lujo a los títulos) -----------
 F_TITULO = "Georgia"
@@ -137,14 +144,14 @@ def banner_imagen(ancho, alto, radio=24):
     W, H = ancho * s, alto * s
     base = Image.new("RGB", (W, H))
     d = ImageDraw.Draw(base)
-    c1, c2 = (15, 32, 66), (10, 20, 40)  # #0F2042 (Navy) a #0A1428 (Navy Profundo)
+    c1, c2 = (4, 4, 68), (8, 8, 45)
     for x in range(W):
         t = x / max(W - 1, 1)
         d.line([(x, 0), (x, H)], fill=tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(3)))
     capa = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     cd = ImageDraw.Draw(capa)
-    cd.ellipse([W * 0.55, -H * 0.9, W * 1.05, H * 0.9], fill=(255, 255, 255, 25))
-    cd.ellipse([W * 0.86, H * 0.45, W * 1.2, H * 1.6], fill=(0, 180, 216, 140))  # Destello turquesa tecnológico
+    cd.ellipse([W * 0.55, -H * 0.9, W * 1.05, H * 0.9], fill=(255, 255, 255, 12))
+    cd.ellipse([W * 0.86, H * 0.45, W * 1.2, H * 1.6], fill=(86, 225, 232, 36))
     base = Image.alpha_composite(base.convert("RGBA"), capa)
     marca = logo_check("#FFFFFF", int(H * 0.60), 38)
     base.alpha_composite(marca, (max(0, W - marca.width - int(W * 0.07)), (H - marca.height) // 2))

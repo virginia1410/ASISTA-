@@ -22,7 +22,6 @@ if exist ".venv\Scripts\python.exe" (
 
 :: 2. Si el entorno es 100% funcional en esta laptop, iniciar el sistema directamente
 if "!VENV_OK!"=="1" (
-    taskkill /f /im pythonw.exe >nul 2>&1
     ".venv\Scripts\python.exe" -c "import db; d = db.Database(); d.connection()" >nul 2>&1
     start "" ".venv\Scripts\pythonw.exe" app.py
     exit /b 0

@@ -4,7 +4,6 @@ Ejecutar: python app.py
 """
 import json
 import os
-import ssl
 import sys
 import traceback
 from datetime import datetime, date
@@ -477,28 +476,17 @@ class App(ctk.CTk):
 
     def _asegurar_servicio_autonomo(self):
         try:
-            import urllib.request
-            contexto_ssl = ssl._create_unverified_context()
-            try:
-                urllib.request.urlopen(
-                    "https://127.0.0.1:8080/api/status",
-                    timeout=0.5,
-                    context=contexto_ssl
-                )
-                return
-            except Exception:
-                urllib.request.urlopen("http://127.0.0.1:8080/api/status", timeout=0.5)
-                return
-        except Exception:
-            pass
-
-        try:
-            import threading
             import servicio_asista
-            t = threading.Thread(target=servicio_asista.iniciar_servidor, args=(8080,), daemon=True)
-            t.start()
-        except Exception:
-            pass
+        except ImportError as exc:
+            messagebox.showerror("Servicio móvil no disponible", f"No se pudo cargar el servicio ASISTA:\n{exc}")
+            return
+
+        if not servicio_asista.asegurar_servidor():
+            messagebox.showwarning(
+                "Servicio móvil no disponible",
+                "No se pudo iniciar el servidor en los puertos HTTP configurados. "
+                "No se cerraron otros procesos; revise servicio_asista.log y los puertos 8080–8089/8443."
+            )
 
     def on_cerrar_con_x(self):
         """Al cerrar con la X no se borra la sesión; queda abierta para la próxima vez."""

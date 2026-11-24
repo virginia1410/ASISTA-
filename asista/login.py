@@ -248,19 +248,17 @@ class VentanaLogin(ctk.CTk):
 
     def _asegurar_servicio(self):
         try:
-            import urllib.request
-            urllib.request.urlopen("http://127.0.0.1:8080/api/status", timeout=0.5)
-            return
-        except Exception:
-            pass
-
-        try:
-            import threading
             import servicio_asista
-            t = threading.Thread(target=servicio_asista.iniciar_servidor, args=(8080,), daemon=True)
-            t.start()
-        except Exception:
-            pass
+        except ImportError as exc:
+            messagebox.showerror("Servicio móvil no disponible", f"No se pudo cargar el servicio ASISTA:\n{exc}")
+            return
+
+        if not servicio_asista.asegurar_servidor():
+            messagebox.showwarning(
+                "Servicio móvil no disponible",
+                "No se pudo iniciar el servidor en los puertos HTTP configurados. "
+                "No se cerraron otros procesos; revise servicio_asista.log y los puertos 8080–8089/8443."
+            )
 
     def abrir_terminal_marcaje(self):
         from views.vista_kiosco import VentanaTerminalMarcaje
@@ -332,15 +330,16 @@ class VentanaLogin(ctk.CTk):
             # 2. Control de Acceso Estricto por Rol (RBAC de Escritorio)
             rol_actual = res.get("rol_sistema", "Control")
             if rol_actual not in ("Directivo", "Administrador"):
-                from servicio_asista import obtener_ip_local
+                from servicio_asista import obtener_ip_local, obtener_url_movil
                 ip_actual = obtener_ip_local()
+                url_movil = obtener_url_movil(ip_actual, "/profesor")
                 messagebox.showwarning(
                     "Acceso Exclusivo al Portal Móvil",
                     f"Acceso restringido.\n\n"
                     f"El usuario '{user}' posee el rol de '{rol_actual}'.\n\n"
                     "Por normativa de seguridad institucional, la aplicación de escritorio está reservada exclusivamente para la Directora y la Administración.\n\n"
                     f"Los profesores deben acceder desde su teléfono celular al portal de escaneo y asistencia:\n"
-                    f"http://{ip_actual}:8080/profesor"
+                    f"{url_movil or 'Servicio móvil no disponible; reinicie ASISTA en la misma red Wi-Fi.'}"
                 )
                 return
 

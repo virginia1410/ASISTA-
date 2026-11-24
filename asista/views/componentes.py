@@ -237,12 +237,19 @@ class DialogoQRMovil(ctk.CTkToplevel):
         self.after(150, self.grab_set)
 
         try:
-            from servicio_asista import listar_ips_locales
-            self.ips = listar_ips_locales()
-            self.ip = self.ips[0]
-        except Exception:
-            self.ips = ["127.0.0.1"]
-            self.ip = "127.0.0.1"
+            import servicio_asista
+            self._servicio = servicio_asista
+            self.ips = [
+                ip for ip in servicio_asista.listar_ips_locales()
+                if not ip.startswith(("127.", "169.254."))
+            ]
+        except ImportError as exc:
+            self._servicio = None
+            self.ips = []
+            self._error_servicio = str(exc)
+        else:
+            self._error_servicio = ""
+        self.ip = self.ips[0] if self.ips else None
 
         color_prim = PRIMARIO[0] if isinstance(PRIMARIO, tuple) else PRIMARIO
         color_acento = ACENTO[0] if isinstance(ACENTO, tuple) else ACENTO
@@ -300,7 +307,7 @@ class DialogoQRMovil(ctk.CTkToplevel):
         )
         f_url.pack(fill="x", padx=24, pady=(0, 8))
         ctk.CTkLabel(
-            f_url, text="URL segura · HTTPS · puerto 8443",
+            f_url, text="Enlace del escáner · protocolo y puerto activos",
             font=(F_TEXTO, 10, "bold"), text_color=color_texto
         ).pack(pady=(6, 0))
         self.lbl_url = ctk.CTkLabel(
@@ -343,15 +350,48 @@ class DialogoQRMovil(ctk.CTkToplevel):
         self._actualizar_qr()
 
     def _actualizar_qr(self):
-        self.url_actual = f"https://{self.ip}:8443/"
+        self.url_actual = (
+            self._servicio.obtener_url_movil(self.ip, "/")
+            if self._servicio and self.ip else None
+        )
+        self.btn_copiar.configure(state="normal" if self.url_actual else "disabled")
+        if not self.url_actual:
+            self._img_tk = None
+            if not self.ips:
+                aviso = self._error_servicio or "No se detectó una dirección IPv4 activa de la red local."
+                self.lbl_url.configure(text="No hay una IPv4 de red disponible.")
+                self.lbl_qr.configure(
+                    text="Conecta esta laptop a la red Wi-Fi y vuelve a abrir el acceso móvil.",
+                    image=None
+                )
+                self.lbl_aviso.configure(text=aviso)
+            else:
+                self.lbl_url.configure(text="El servicio móvil todavía no está disponible.")
+                self.lbl_qr.configure(text="Inicia ASISTA y vuelve a abrir esta ventana.", image=None)
+                self.lbl_aviso.configure(
+                    text="No se detectó un listener ASISTA activo en los puertos HTTP/HTTPS configurados."
+                )
+            return
+
+        es_https = self.url_actual.startswith("https://")
         self.lbl_url.configure(text=self.url_actual)
+        self.lbl_aviso.configure(
+            text=(
+                "La cámara requiere HTTPS. El certificado local es autofirmado; "
+                "el teléfono puede pedir que se confíe en él antes de permitir la cámara."
+                if es_https else
+                "Este enlace HTTP abre el portal, pero no permite cámara en vivo. "
+                "Libera el puerto HTTPS 8443 y reinicia ASISTA para activar el escaneo."
+            )
+        )
 
         # Regenerar QR
+        self.lbl_qr.configure(text="", image=None)
         try:
             import qrcode
             qr_img = qrcode.make(self.url_actual).convert("RGBA")
             qr_img = qr_img.resize((190, 190), Image.Resampling.LANCZOS)
             self._img_tk = ctk.CTkImage(light_image=qr_img, size=(190, 190))
-            self.lbl_qr.configure(image=self._img_tk)
+            self.lbl_qr.configure(text="", image=self._img_tk)
         except Exception as e:
             self.lbl_qr.configure(text=f"Código QR no disponible: {e}")

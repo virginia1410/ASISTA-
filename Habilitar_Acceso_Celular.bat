@@ -20,17 +20,27 @@ echo.
 netsh advfirewall firewall delete rule name="Asista Servidor 8080" >nul 2>&1
 netsh advfirewall firewall delete rule name="Asista Servidor 8443" >nul 2>&1
 netsh advfirewall firewall delete rule name="Asista Servidor 80" >nul 2>&1
+netsh advfirewall firewall delete rule name="Asista HTTP LAN" >nul 2>&1
+netsh advfirewall firewall delete rule name="Asista HTTPS LAN" >nul 2>&1
 
-netsh advfirewall firewall add rule name="Asista Servidor 8080" dir=in action=allow protocol=TCP localport=8080 profile=any >nul 2>&1
-netsh advfirewall firewall add rule name="Asista Servidor 8443" dir=in action=allow protocol=TCP localport=8443 profile=any >nul 2>&1
-netsh advfirewall firewall add rule name="Asista Servidor 80" dir=in action=allow protocol=TCP localport=80 profile=any >nul 2>&1
+netsh advfirewall firewall add rule name="Asista HTTP LAN" dir=in action=allow protocol=TCP localport=8080-8089 profile=private >nul 2>&1
+if errorlevel 1 goto error
+netsh advfirewall firewall add rule name="Asista HTTPS LAN" dir=in action=allow protocol=TCP localport=8443 profile=private >nul 2>&1
+if errorlevel 1 goto error
 
 echo ====================================================================
-echo   [OK] LISTO: Puertos 8080 (HTTP) y 8443 (HTTPS Camara en Vivo)
-echo   han sido habilitados con exito en tu red.
+echo   [OK] LISTO: Puertos TCP 8080-8089 (HTTP) y 8443 (HTTPS)
+echo   habilitados solo para redes privadas.
 echo.
-echo   Tus telefonos celulares ya pueden conectarse y escanear
-echo   en tiempo real sin bloqueos.
+echo   Confirma que el perfil de esta red Wi-Fi sea "Privada".
 echo ====================================================================
 echo.
 pause
+exit /b 0
+
+:error
+echo.
+echo [ERROR] Windows no pudo crear una de las reglas del Firewall.
+echo Ejecuta este archivo como Administrador y verifica el perfil de red.
+pause
+exit /b 1

@@ -17,8 +17,8 @@ ESTRUCTURA DE ESTA CARPETA:
   [Carpeta] asista\                  --> Subcarpeta que contiene todo el codigo del sistema.
   [Archivo] INSTALAR EN LAPTOP.bat   --> Instalador automatizado de 1 solo clic.
   [Archivo] INICIAR SISTEMA.bat      --> Acceso para iniciar el sistema directamente.
-  [Archivo] INSTRUCCIONES.txt        --> Esta guia con pasos y credenciales de acceso.
-  [Archivo] Habilitar_Acceso.bat     --> Abre los puertos en Windows Firewall para celulares.
+  [Archivo] INSTRUCCIONES DE INSTALACION.txt --> Esta guia.
+  [Archivo] Habilitar_Acceso_Celular.bat     --> Habilita acceso LAN en el Firewall.
 
 ===============================================================================
 PASOS PARA INSTALAR Y ABRIR EN TU LAPTOP (SOLO 2 PASOS)
@@ -65,17 +65,27 @@ CONEXION DE CELULARES Y ESCANEO EN TIEMPO REAL (CAMARA EN VIVO)
 ===============================================================================
 
 1. Conecta la laptop y los celulares a la MISMA red Wi-Fi.
-2. Si es la primera vez en esa laptop, ejecuta con doble clic:
-   "Habilitar_Acceso_Celular.bat" (habilita los puertos en el Firewall).
-3. En el sistema principal de la laptop, toca el boton azul "📱 Movil Docente".
-4. Veras el codigo QR configurado en:
-   [ 📷 Camara en Vivo (HTTPS :8443) ]
-5. Escanea el codigo QR con tu celular:
-   - Al entrar por primera vez, el navegador dira "La conexion no es privada".
-   - Toca en "Configuracion avanzada" y luego en "Acceder a... (no seguro)".
-   - Toca "Permitir" cuando te pida acceso a la camara.
-   - ¡Listo! La camara se abrira transmitiendo video continuo en tiempo real,
-     escaneando y marcando automaticamente cada carnet sin necesidad de tomar fotos.
+2. En Windows, configura esa red Wi-Fi como "Privada". Una vez por laptop,
+   ejecuta "Habilitar_Acceso_Celular.bat" como Administrador. Solo abre
+   TCP 8080-8089 y 8443 en el perfil Privado; no detiene otros procesos.
+3. Inicia ASISTA con "INICIAR SISTEMA.bat". Si 8080 está ocupado, el servicio
+   probará puertos alternativos 8081-8089 sin cerrar el proceso que los usa.
+4. Desde el botón de acceso móvil/QR en ASISTA, verifica que el enlace completo
+   muestre el protocolo (preferiblemente https://), la IPv4 de esta laptop y el
+   puerto activo. El QR se genera con exactamente esa URL.
+5. Escanea el QR con el teléfono conectado a la misma Wi-Fi y confirma que la
+   página del escáner abre. HTTPS usa un certificado autofirmado local: comprueba
+   que la dirección corresponda a la laptop antes de confiar el certificado.
+   Algunos navegadores requieren instalar y confiar el certificado en el teléfono
+   para habilitar la cámara; no todos permiten continuar solo desde la advertencia.
+6. Permite el acceso a la cámara. El visor debe iniciar y leer el carnet en vivo;
+   la tarjeta inferior confirma el marcaje, indica duplicado o muestra el error.
+   Vuelve a presentar el mismo carnet para comprobar el aviso de duplicado.
+
+Si el QR indica HTTP, la página puede abrir, pero el navegador no permitirá el
+escaneo en vivo. Verifica que TCP 8443 esté libre y permitido, reinicia ASISTA y
+vuelve a abrir el QR. Si cambias de red Wi-Fi con ASISTA abierto, reinicia el
+sistema para actualizar la IPv4 incluida en el certificado local.
 
 ===============================================================================
                            SISTEMA 100% OPERATIVO

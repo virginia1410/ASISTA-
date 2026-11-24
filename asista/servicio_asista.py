@@ -1,9 +1,11 @@
 """Servicio de Fondo Autónomo para Asista:
-- Servidor Web de Marcaje Móvil (HTTP en puerto 8080)
+- Servidor Web de Marcaje Móvil (HTTP desde 8080, con alternativas limitadas)
+- HTTPS en 8443 para habilitar la cámara móvil
 - Registro móvil de asistencias con autenticación y permisos por rol/cohorte
 - Ejecución automática del cierre diario institucional a las 11:59 PM
 - Permanece activo 24/7 incluso si la ventana principal de Asista está cerrada.
 """
+import errno
 import http.server
 import ipaddress
 import ssl
@@ -18,6 +20,8 @@ import secrets
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 from datetime import date, datetime
 from urllib.parse import parse_qs, urlparse
 
@@ -47,6 +51,16 @@ logging.basicConfig(
 
 HOST_SERVICIO = "0.0.0.0"
 PUERTO_SERVICIO = int(os.getenv("ASISTA_PORT", 8080))
+PUERTOS_HTTP_ALTERNATIVOS = 10
+PUERTO_HTTPS = 8443
+PUERTO_HTTP_ACTIVO = None
+PUERTO_HTTPS_ACTIVO = None
+IPS_CERTIFICADO_SSL = set()
+_HILO_HTTPS = None
+_LOCK_INICIO_SERVICIO = threading.Lock()
+_EVENTO_SERVICIO_LISTO = threading.Event()
+_HILO_SERVICIO = None
+_ERROR_INICIO_SERVICIO = None
 db_instancia = Database()
 API_SESSION_TTL = 8 * 60 * 60
 API_LOGIN_WINDOW = 15 * 60
@@ -294,15 +308,14 @@ def obtener_ip_local():
     # Probar resolución por ruta de socket (el método más preciso del SO)
     for target in (("8.8.8.8", 80), ("1.1.1.1", 80), ("192.168.0.254", 80), ("192.168.1.1", 80)):
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(0.3)
-            s.connect(target)
-            ip = s.getsockname()[0]
-            s.close()
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.settimeout(0.3)
+                s.connect(target)
+                ip = s.getsockname()[0]
             if ip and not ip.startswith("127.") and not ip.startswith("169.254."):
                 _CACHE_IP = ip
                 return _CACHE_IP
-        except Exception:
+        except OSError:
             pass
 
     # Consulta a interfaces de red en Windows
@@ -317,7 +330,7 @@ def obtener_ip_local():
             if candidate and not candidate.startswith("127.") and not candidate.startswith("169.254."):
                 _CACHE_IP = candidate
                 return _CACHE_IP
-    except Exception:
+    except (OSError, subprocess.SubprocessError):
         pass
 
     _CACHE_IP = "127.0.0.1"
@@ -337,6 +350,75 @@ def listar_ips_locales():
     except Exception:
         pass
     return candidatos or ["127.0.0.1"]
+
+
+def _consultar_estado_local(puerto, esquema="http"):
+    """Consulta el endpoint liviano del servicio sin abrir conexiones a la base de datos."""
+    url = f"{esquema}://127.0.0.1:{puerto}/api/status"
+    contexto = ssl._create_unverified_context() if esquema == "https" else None
+    try:
+        with urllib.request.urlopen(url, timeout=0.15, context=contexto) as respuesta:
+            estado = json.loads(respuesta.read(2048).decode("utf-8"))
+    except (OSError, ssl.SSLError, urllib.error.URLError, ValueError):
+        return None
+
+    if not isinstance(estado, dict) or estado.get("status") != "online":
+        return None
+    if estado.get("service") != "asista" and not {"hora", "fecha"}.issubset(estado):
+        return None
+
+    return estado
+
+
+def obtener_estado_servidor():
+    """Devuelve los puertos que están atendiendo el servicio local, si alguno."""
+    puertos_http = []
+    if PUERTO_HTTP_ACTIVO:
+        puertos_http.append(PUERTO_HTTP_ACTIVO)
+    puertos_http.extend(
+        range(PUERTO_SERVICIO, min(PUERTO_SERVICIO + PUERTOS_HTTP_ALTERNATIVOS, 65536))
+    )
+
+    for puerto in dict.fromkeys(puertos_http):
+        estado = _consultar_estado_local(puerto)
+        if estado:
+            estado["http_port"] = estado.get("http_port") or puerto
+            if not estado.get("https_port"):
+                estado_https = _consultar_estado_local(PUERTO_HTTPS_ACTIVO or PUERTO_HTTPS, "https")
+                if estado_https:
+                    estado["https_port"] = estado_https.get("https_port") or PUERTO_HTTPS
+            return estado
+
+    puerto_https = PUERTO_HTTPS_ACTIVO or PUERTO_HTTPS
+    estado = _consultar_estado_local(puerto_https, "https")
+    if estado:
+        estado["http_port"] = estado.get("http_port") or PUERTO_HTTP_ACTIVO
+        estado["https_port"] = estado.get("https_port") or puerto_https
+        return estado
+    return None
+
+
+def obtener_url_movil(ip=None, ruta="/"):
+    """Genera una URL móvil con protocolo y puerto realmente activos."""
+    direccion = ip or obtener_ip_local()
+    try:
+        ipv4 = ipaddress.ip_address(direccion)
+        if not isinstance(ipv4, ipaddress.IPv4Address) or ipv4.is_loopback or ipv4.is_link_local:
+            return None
+    except ValueError:
+        return None
+
+    estado = obtener_estado_servidor()
+    if not estado:
+        return None
+
+    ruta = ruta if ruta.startswith("/") else f"/{ruta}"
+    puerto_https = estado.get("https_port")
+    if puerto_https and (not IPS_CERTIFICADO_SSL or str(ipv4) in IPS_CERTIFICADO_SSL):
+        return f"https://{ipv4}:{puerto_https}{ruta}"
+
+    puerto_http = estado.get("http_port")
+    return f"http://{ipv4}:{puerto_http}{ruta}" if puerto_http else None
 
 
 def generar_icono_pwa(size=192):
@@ -2508,17 +2590,22 @@ HTML_SCANNER = """<!DOCTYPE html>
         actualizarReloj();
 
         // Auto-iniciar cámara en vivo al abrir la página
-        window.addEventListener('load', function() {
-            comprobarEstadoServidor();
+        window.addEventListener('load', async function() {
+            await comprobarEstadoServidor();
             setInterval(comprobarEstadoServidor, 15000);
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                const bHttps = document.getElementById('bannerHttps');
-                const btnHttps = document.getElementById('btnIrHttps');
-                if (bHttps && btnHttps) {
-                    btnHttps.href = 'https://' + location.hostname + ':8443' + location.pathname;
-                    btnHttps.textContent = btnHttps.href;
-                    bHttps.style.display = 'flex';
+            if (location.protocol !== 'https:' && !window.isSecureContext &&
+                location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                const urlSegura = crearUrlHttpsActiva();
+                if (urlSegura) {
+                    location.replace(urlSegura);
+                    return;
                 }
+                const banner = document.getElementById('bannerHttps');
+                const botonHttps = document.getElementById('btnIrHttps');
+                banner.style.display = 'flex';
+                banner.querySelector('strong').textContent = 'HTTPS no está disponible';
+                banner.querySelector('div div span').textContent = 'Cámara en vivo requiere una conexión segura';
+                botonHttps.style.display = 'none';
             } else {
                 setTimeout(function() {
                     activarCamara();
@@ -2532,6 +2619,13 @@ HTML_SCANNER = """<!DOCTYPE html>
         let ultimoCodigo = null;
         let tsUltimoCodigo = 0;
         let marcajeEnCurso = false;
+        let puertoHttpsActivo = null;
+
+        function crearUrlHttpsActiva() {
+            if (!puertoHttpsActivo) return null;
+            return `https://${location.hostname}:${puertoHttpsActivo}${location.pathname}`;
+        }
+
         function establecerEstadoServidor(estado, texto) {
             const indicador = document.getElementById('estadoServidor');
             indicador.dataset.state = estado;
@@ -2543,8 +2637,11 @@ HTML_SCANNER = """<!DOCTYPE html>
             try {
                 const respuesta = await fetch('/api/status', {cache: 'no-store'});
                 if (!respuesta.ok) throw new Error('Servidor no disponible');
+                const servicio = await respuesta.json();
+                puertoHttpsActivo = Number(servicio.https_port) || null;
                 establecerEstadoServidor('online', 'En línea');
             } catch (_) {
+                puertoHttpsActivo = null;
                 establecerEstadoServidor('offline', 'Sin conexión');
             }
         }
@@ -2571,18 +2668,14 @@ HTML_SCANNER = """<!DOCTYPE html>
             const visor = document.getElementById('visorCamara');
 
             // Si el navegador no permite streaming por ser HTTP en celular, guiar a HTTPS para cámara en tiempo real
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                const httpsUrl = 'https://' + location.hostname + ':8443' + location.pathname;
+            if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const httpsUrl = crearUrlHttpsActiva();
                 const resBox = document.getElementById('resultado');
                 resBox.className = 'result-box result-warning';
-                resBox.innerHTML = `
-                    <div class="res-nombre">🎥 Cámara en Vivo requiere conexión segura</div>
-                    <div class="res-det" style="margin-top:6px; line-height:1.5;">
-                        Los celulares requieren HTTPS para transmitir video en tiempo real.<br><br>
-                        <a href="${httpsUrl}" style="display:inline-block; background:var(--acento); color:var(--primario); padding:10px 16px; border-radius:10px; font-weight:800; text-decoration:none; overflow-wrap:anywhere;">${httpsUrl}</a><br><br>
-                        <small style="opacity:0.85;">(Si tu teléfono muestra <i>"La conexión no es privada"</i>, pulsa en <b>Configuración avanzada</b> → <b>Acceder a... (no seguro)</b>).</small>
-                    </div>
-                `;
+                const detalle = httpsUrl
+                    ? `Abre esta dirección segura para habilitar la cámara: <a href="${httpsUrl}" style="color:var(--acento);overflow-wrap:anywhere;">${httpsUrl}</a>.`
+                    : 'El listener HTTPS no está activo. Reinicia ASISTA y verifica que el puerto HTTPS 8443 esté libre y permitido en el Firewall.';
+                resBox.innerHTML = `<div class="res-nombre">La cámara requiere HTTPS</div><div class="res-det" style="margin-top:6px;line-height:1.5;">${detalle}</div>`;
                 resBox.style.display = 'block';
                 resBox.scrollIntoView({behavior:'smooth'});
                 return;
@@ -3408,10 +3501,20 @@ self.addEventListener('fetch', (e) => {
                 self._responder_json({"alumnos": [], "sesion": {"estado": "Abierta"}}, status_code=500)
 
         elif ruta == "/api/status":
+            host = self.headers.get("Host", "").split(":", 1)[0].strip("[]")
+            puerto_https = (
+                PUERTO_HTTPS_ACTIVO
+                if _HILO_HTTPS and _HILO_HTTPS.is_alive() else None
+            )
+            if puerto_https and host not in ("localhost", "127.0.0.1") and host not in IPS_CERTIFICADO_SSL:
+                puerto_https = None
             self._responder_json({
+                "service": "asista",
                 "status": "online",
                 "hora": datetime.now().strftime("%H:%M:%S"),
-                "fecha": date.today().isoformat()
+                "fecha": date.today().isoformat(),
+                "http_port": PUERTO_HTTP_ACTIVO,
+                "https_port": puerto_https
             })
 
         elif ruta == "/api/registros":
@@ -3765,7 +3868,9 @@ def loop_cierre_diario_automatico():
 
 def generar_certificado_ssl():
     """Genera un certificado SSL autofirmado para HTTPS local."""
-    import datetime, ipaddress
+    import datetime
+    global IPS_CERTIFICADO_SSL
+
     try:
         from cryptography import x509
         from cryptography.x509.oid import NameOID
@@ -3780,7 +3885,29 @@ def generar_certificado_ssl():
     key_path  = BASE_DIR / "asista_key.pem"
 
     if cert_path.exists() and key_path.exists():
-        return str(cert_path), str(key_path)
+        try:
+            cert_existente = x509.load_pem_x509_certificate(cert_path.read_bytes())
+            ips_existentes = {
+                str(ip) for ip in cert_existente.extensions
+                .get_extension_for_class(x509.SubjectAlternativeName)
+                .value.get_values_for_type(IPAddress)
+            }
+            vencimiento = getattr(cert_existente, "not_valid_after_utc", None)
+            if vencimiento is None:
+                vencimiento = cert_existente.not_valid_after.replace(tzinfo=datetime.timezone.utc)
+            ips_requeridas = {
+                ip for ip in listar_ips_locales()
+                if ip and not ip.startswith(("127.", "169.254."))
+            }
+            if ips_requeridas.issubset(ips_existentes) and vencimiento > datetime.datetime.now(datetime.timezone.utc):
+                ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER).load_cert_chain(
+                    certfile=str(cert_path), keyfile=str(key_path)
+                )
+                IPS_CERTIFICADO_SSL = ips_existentes
+                return str(cert_path), str(key_path)
+            logging.info("Renovando certificado SSL: vencido o sin la IP IPv4 activa.")
+        except (OSError, ValueError, ssl.SSLError, x509.ExtensionNotFound):
+            logging.warning("Certificado SSL previo inválido; se regenerará.")
 
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     subject = issuer = x509.Name([
@@ -3793,20 +3920,24 @@ def generar_certificado_ssl():
         DNSName("asista.local"),
         IPAddress(ipaddress.IPv4Address("127.0.0.1")),
     ]
+    IPS_CERTIFICADO_SSL = {"127.0.0.1"}
     for _cand_ip in listar_ips_locales():
         try:
-            san_entries.append(IPAddress(ipaddress.IPv4Address(_cand_ip)))
-        except Exception:
+            direccion = ipaddress.IPv4Address(_cand_ip)
+            san_entries.append(IPAddress(direccion))
+            IPS_CERTIFICADO_SSL.add(str(direccion))
+        except ValueError:
             pass
     san = x509.SubjectAlternativeName(san_entries)
+    ahora_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.utcnow())
-        .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=3650))
+        .not_valid_before(ahora_utc)
+        .not_valid_after(ahora_utc + datetime.timedelta(days=3650))
         .add_extension(san, critical=False)
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(key, hashes.SHA256())
@@ -3821,73 +3952,131 @@ def generar_certificado_ssl():
     return str(cert_path), str(key_path)
 
 
-def iniciar_servidor(puerto=PUERTO_SERVICIO):
-    """Inicia el servidor HTTP/HTTPS dual y el loop de cierre diario."""
-    t_cierre = threading.Thread(target=loop_cierre_diario_automatico, daemon=True)
-    t_cierre.start()
+class AsistaHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    allow_reuse_address = False
+    daemon_threads = True
 
+
+def _crear_servidor_http(puerto_inicial):
+    fin = min(puerto_inicial + PUERTOS_HTTP_ALTERNATIVOS, 65536)
+    for puerto in range(puerto_inicial, fin):
+        try:
+            return AsistaHTTPServer((HOST_SERVICIO, puerto), AsistaHTTPRequestHandler)
+        except OSError as exc:
+            if exc.errno != errno.EADDRINUSE and getattr(exc, "winerror", None) != 10048:
+                raise
+            logging.warning("Puerto HTTP %s ocupado; se probará el siguiente sin cerrar otros procesos.", puerto)
+    raise OSError(errno.EADDRINUSE, f"No hay puertos libres entre {puerto_inicial} y {fin - 1}.")
+
+
+def iniciar_servidor(puerto=PUERTO_SERVICIO):
+    """Inicia el listener HTTP en el primer puerto disponible y HTTPS en 8443."""
+    global PUERTO_HTTP_ACTIVO, PUERTO_HTTPS_ACTIVO, _HILO_HTTPS, _ERROR_INICIO_SERVICIO
+
+    if not 1 <= int(puerto) <= 65535:
+        raise ValueError(f"Puerto HTTP fuera de rango: {puerto}")
+
+    PUERTO_HTTPS_ACTIVO = None
+    _HILO_HTTPS = None
+    servidor = _crear_servidor_http(int(puerto))
+    PUERTO_HTTP_ACTIVO = servidor.server_port
     ip_actual = obtener_ip_local()
+
     try:
-        if hasattr(sys.stdout, 'reconfigure'):
-            sys.stdout.reconfigure(encoding='utf-8')
-    except Exception:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, OSError):
         pass
 
-    # Preparar certificados SSL para modo seguro
-    cert_path, key_path = generar_certificado_ssl()
-    usar_https = cert_path and key_path and os.path.exists(cert_path)
-
-    class ReusableServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
-        allow_reuse_address = True
-
-    # 1. Listener HTTPS en puerto 8443 (para escáner de cámara WebRTC con SSL)
-    if usar_https:
-        def _run_https():
+    try:
+        cert_path, key_path = generar_certificado_ssl()
+        if cert_path and key_path and os.path.exists(cert_path) and os.path.exists(key_path):
+            srv_https = AsistaHTTPServer((HOST_SERVICIO, PUERTO_HTTPS), AsistaHTTPRequestHandler)
             try:
-                srv_https = ReusableServer((HOST_SERVICIO, 8443), AsistaHTTPRequestHandler)
-                ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                ctx.load_cert_chain(certfile=cert_path, keyfile=key_path)
-                srv_https.socket = ctx.wrap_socket(srv_https.socket, server_side=True)
-                srv_https.serve_forever()
-            except Exception as e_https:
-                logging.info(f"Listener HTTPS 8443: {e_https}")
+                contexto = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                contexto.load_cert_chain(certfile=cert_path, keyfile=key_path)
+                srv_https.socket = contexto.wrap_socket(srv_https.socket, server_side=True)
+                hilo_https = threading.Thread(target=srv_https.serve_forever, daemon=True)
+                hilo_https.start()
+                _HILO_HTTPS = hilo_https
+                PUERTO_HTTPS_ACTIVO = PUERTO_HTTPS
+            except Exception:
+                srv_https.server_close()
+                raise
+    except Exception:
+        PUERTO_HTTPS_ACTIVO = None
+        logging.exception("No se pudo iniciar HTTPS en el puerto %s; HTTP permanece disponible.", PUERTO_HTTPS)
 
-        t_https = threading.Thread(target=_run_https, daemon=True)
-        t_https.start()
+    t_cierre = threading.Thread(target=loop_cierre_diario_automatico, daemon=True)
+    t_cierre.start()
+    _EVENTO_SERVICIO_LISTO.set()
 
-    # 2. Listener HTTP en puerto 80 si está libre (acceso directo sin escribir :8080)
-    def _run_port_80():
-        try:
-            srv_80 = ReusableServer((HOST_SERVICIO, 80), AsistaHTTPRequestHandler)
-            srv_80.serve_forever()
-        except Exception:
-            pass
-
-    t_80 = threading.Thread(target=_run_port_80, daemon=True)
-    t_80.start()
-
-    print("=" * 60)
-    print("[ASISTA] Servicio de Asistencia Autónomo en línea")
-    print(f"Acceso Móvil HTTP (Sin certificados - recomendado):")
-    print(f"  • Portal Docente:  http://{ip_actual}:{puerto}/profesor")
-    print(f"  • Marcaje General: http://{ip_actual}:{puerto}/")
-    if usar_https:
-        print(f"Acceso Móvil HTTPS (Cámara en vivo):")
-        print(f"  • Portal Docente:  https://{ip_actual}:8443/profesor")
-    print("Auto-Cierre Diario a las 11:59 PM: ACTIVADO")
-    print("=" * 60)
-    logging.info(f"Servicio Asista iniciado en puerto {puerto}. IP local: {ip_actual}")
+    mensajes = [
+        "=" * 60,
+        "[ASISTA] Servicio de Asistencia Autónomo en línea",
+        f"Acceso HTTP:  http://{ip_actual}:{PUERTO_HTTP_ACTIVO}/",
+    ]
+    if PUERTO_HTTPS_ACTIVO:
+        mensajes.append(f"Acceso HTTPS: https://{ip_actual}:{PUERTO_HTTPS_ACTIVO}/ (cámara en vivo)")
+    else:
+        mensajes.append("HTTPS no disponible; la cámara móvil requiere habilitar el certificado y el puerto 8443.")
+    mensajes.extend((
+        "Escáner en vivo: HTTPS requiere confiar el certificado local en el teléfono.",
+        "=" * 60,
+    ))
+    if sys.stdout is not None:
+        for mensaje in mensajes:
+            print(mensaje)
+    logging.info(
+        "Servicio Asista iniciado. %s",
+        " | ".join(mensajes[1:-1])
+    )
 
     try:
-        servidor = ReusableServer((HOST_SERVICIO, puerto), AsistaHTTPRequestHandler)
         servidor.serve_forever()
-    except OSError as err:
-        if err.errno == 10048:
-            nuevo_puerto = puerto + 1
-            print(f"Puerto {puerto} en uso, intentando puerto alternativo {nuevo_puerto}...")
-            iniciar_servidor(nuevo_puerto)
-        else:
-            raise
+    finally:
+        servidor.server_close()
+        PUERTO_HTTP_ACTIVO = None
+
+
+def _ejecutar_servidor():
+    global _ERROR_INICIO_SERVICIO
+    try:
+        iniciar_servidor(PUERTO_SERVICIO)
+    except Exception as exc:
+        _ERROR_INICIO_SERVICIO = exc
+        _EVENTO_SERVICIO_LISTO.set()
+        logging.exception("No se pudo iniciar el servicio ASISTA.")
+
+
+def asegurar_servidor(timeout=5.0):
+    """Inicia una sola instancia local y espera una respuesta HTTP verificable."""
+    global _HILO_SERVICIO, _ERROR_INICIO_SERVICIO
+
+    if obtener_estado_servidor():
+        return True
+
+    with _LOCK_INICIO_SERVICIO:
+        if _HILO_SERVICIO is None or not _HILO_SERVICIO.is_alive():
+            _EVENTO_SERVICIO_LISTO.clear()
+            _ERROR_INICIO_SERVICIO = None
+            _HILO_SERVICIO = threading.Thread(target=_ejecutar_servidor, daemon=True)
+            _HILO_SERVICIO.start()
+        hilo = _HILO_SERVICIO
+
+    inicio = time.monotonic()
+    if not _EVENTO_SERVICIO_LISTO.wait(timeout):
+        logging.error("Tiempo agotado esperando que ASISTA abra un puerto HTTP.")
+        return False
+    if _ERROR_INICIO_SERVICIO:
+        return False
+    while True:
+        if obtener_estado_servidor():
+            return True
+        if not hilo.is_alive() or time.monotonic() - inicio >= timeout:
+            logging.error("El listener HTTP no respondió después de enlazar el puerto.")
+            return False
+        time.sleep(0.1)
 
 
 if __name__ == "__main__":
