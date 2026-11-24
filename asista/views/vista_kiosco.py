@@ -20,7 +20,7 @@ except ImportError:
 import config
 from db import resolver_turno_persona
 from tema import (
-    BG, BORDE, CARD, F_TEXTO, F_TITULO, PRIMARIO, PRIMARIO_H, ACENTO, ACENTO_H, AVISO, SUAVE, TEXTO, logo_check
+    BG, BORDE, CARD, F_TEXTO, F_TITULO, PRIMARIO, PRIMARIO_H, ACENTO, ACENTO_H, AVISO, SUAVE, SUAVE_BG, TEXTO, logo_check
 )
 from .componentes import DialogoQRMovil
 

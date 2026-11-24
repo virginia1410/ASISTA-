@@ -2658,11 +2658,6 @@ HTML_SCANNER = """<!DOCTYPE html>
             } catch(e) { detectorBD = null; }
         }
 
-        function tomarFotoDirecta() {
-            const input = document.getElementById('inputFotoCarnet');
-            if (input) input.click();
-        }
-
         async function activarCamara() {
             const btn = document.getElementById('btnActivarCamara');
             const visor = document.getElementById('visorCamara');
@@ -2757,10 +2752,7 @@ HTML_SCANNER = """<!DOCTYPE html>
                         tsUltimoCodigo = ahora;
                         document.getElementById('estadoCamara').textContent = 'Código detectado. Registrando...';
                         if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
-                        const inputCed = document.getElementById('inputCedula');
-                        if (inputCed) inputCed.value = cedula;
                         await procesarCedula(cedula);
-                        if (inputCed) inputCed.value = '';
                         if (streamCamara) {
                             document.getElementById('estadoCamara').textContent = 'Listo. Apunta al siguiente carnet.';
                         }
@@ -2796,48 +2788,6 @@ HTML_SCANNER = """<!DOCTYPE html>
             resBox.className = 'result-box result-warning';
             resBox.innerHTML = '<div class="res-nombre">⚠️ Aviso</div><div class="res-det">' + msg + '</div>';
             resBox.style.display = 'block';
-        }
-
-        // Fallback: foto para dispositivos que bloqueen getUserMedia
-        async function procesarFotoCarnet(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const resBox = document.getElementById('resultado');
-            resBox.className = "result-box result-warning";
-            resBox.innerHTML = '<div class="res-nombre">📸 Decodificando carnet...</div><div class="res-det">Leyendo código de barras</div>';
-            resBox.style.display = "block";
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                const img = new Image();
-                img.onload = async function() {
-                    let w = img.width, h = img.height;
-                    const MAX = 1280;
-                    if (w > MAX || h > MAX) {
-                        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-                        else { w = Math.round(w * MAX / h); h = MAX; }
-                    }
-                    const cnv = document.createElement('canvas');
-                    cnv.width = w; cnv.height = h;
-                    cnv.getContext('2d').drawImage(img, 0, 0, w, h);
-                    let cod = null;
-                    if (detectorBD) {
-                        try { const bs = await detectorBD.detect(cnv); if (bs.length) cod = bs[0].rawValue.trim(); } catch(e){}
-                    }
-                    if (!cod && typeof ZXing !== 'undefined' && ZXing) {
-                        try { const r = await new ZXing.BrowserMultiFormatReader().decodeFromCanvas(cnv); if (r) cod = r.getText().trim(); } catch(e){}
-                    }
-                    if (cod) {
-                        procesarCedula(cod.replace(/[^0-9]/g,'') || cod.trim());
-                    } else {
-                        reproducirBeep(false);
-                        resBox.className = "result-box result-error";
-                        resBox.innerHTML = '<div class="res-nombre">No se detectó el código</div><div class="res-det">Escriba la cédula manualmente.</div>';
-                    }
-                };
-                img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-            event.target.value = "";
         }
 
         async function procesarCedula(cedula) {
@@ -2911,15 +2861,6 @@ HTML_SCANNER = """<!DOCTYPE html>
             } finally {
                 marcajeEnCurso = false;
             }
-        }
-
-        function enviarMarcaje() {
-            const input = document.getElementById('inputCedula');
-            const cedula = input.value.trim().replace(/[^0-9]/g, '');
-            if (!cedula) return;
-            input.value = "";
-            input.blur();
-            procesarCedula(cedula);
         }
 
         async function actualizarFeed() {
@@ -3026,9 +2967,6 @@ HTML_SCANNER = """<!DOCTYPE html>
                 gAnd.style.display = 'none';
             }
         }
-
-        const lnkHttps = document.getElementById('lnkModoHttps');
-        if (lnkHttps) lnkHttps.href = 'https://' + location.hostname + ':8443' + location.pathname;
 
     </script>
 </body>
