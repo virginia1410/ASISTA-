@@ -1,0 +1,9 @@
+[33mcommit 8eaeeb5250f4fd0fa3cfdc055ac06510761d28b8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmejoras-agentes[m[33m, [m[1;31morigin/mejoras-agentes[m[33m)[m
+Author: virginia1410 <vanessavirginiamoralespolanco@gmail.com>
+Date:   Tue Nov 24 00:25:55 2026 -0400
+
+    Cierre Paso 3: Validacion integral, pruebas y escaneo movil en mejoras-agentes
+
+ asista/servicio_asista.py    | 62 [31m--------------------------------------------[m
+ asista/views/vista_kiosco.py |  2 [32m+[m[31m-[m
+ 2 files changed, 1 insertion(+), 63 deletions(-)

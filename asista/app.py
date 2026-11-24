@@ -12,8 +12,9 @@ import customtkinter as ctk
 
 from db import Database
 from tema import (
-    ACENTO, BG, F_TEXTO, F_TITULO, LEMA, MORADO, NOMBRE_SISTEMA,
-    logo_check, logo_institucion, logo_asista, RUTA_ICONO
+    ACENTO, ACENTO_H, ACENTO_TEXTO, BG, BORDE, CARD, F_TEXTO, F_TITULO, LEMA,
+    MORADO, NOMBRE_SISTEMA, PRIMARIO, SIDEBAR_HOVER, SIDEBAR_SUPERFICIE,
+    SIDEBAR_TEXTO, SUAVE, TEXTO, logo_check, logo_institucion, logo_asista, RUTA_ICONO
 )
 from views import (
     Inicio, Marcaje, Personas, Justificaciones, Reportes, Administracion, estilo_tablas
@@ -187,7 +188,7 @@ class App(ctk.CTk):
         return im
 
     def _barra_lateral(self):
-        self.lado = ctk.CTkFrame(self, width=260, corner_radius=0, fg_color=MORADO)
+        self.lado = ctk.CTkFrame(self, width=228, corner_radius=0, fg_color=MORADO)
         self.lado.grid(row=0, column=0, sticky="nsw")
         self.lado.pack_propagate(False)
         self.lado.grid_propagate(False)
@@ -205,19 +206,20 @@ class App(ctk.CTk):
 
         btn_colapsar_marca = ctk.CTkButton(
             marca, text="◀", width=30, height=30, corner_radius=8,
-            fg_color="#162C55", hover_color="#1E3A6D", font=(F_TEXTO, 12, "bold"),
+            fg_color=SIDEBAR_SUPERFICIE, hover_color=SIDEBAR_HOVER,
+            text_color=SIDEBAR_TEXTO, font=(F_TEXTO, 12, "bold"),
             command=self.toggle_sidebar
         )
         btn_colapsar_marca.pack(side="right")
 
-        ctk.CTkLabel(self.lado, text=LEMA, font=(F_TEXTO, 9, "bold"), text_color="#94A3B8", anchor="w").pack(
+        ctk.CTkLabel(self.lado, text=LEMA, font=(F_TEXTO, 9, "bold"), text_color=SIDEBAR_TEXTO, anchor="w").pack(
             fill="x", padx=24, pady=(2, 0))
-        ctk.CTkFrame(self.lado, width=40, height=3, fg_color=ACENTO[0], corner_radius=2).pack(
+        ctk.CTkFrame(self.lado, width=40, height=3, fg_color=ACENTO, corner_radius=2).pack(
             anchor="w", padx=24, pady=(4, 8)
         )
 
         # REPOSICIONAMIENTO SOLICITADO: Logo del colegio y nombre institucional ARRIBA debajo de Asista
-        card_inst = ctk.CTkFrame(self.lado, fg_color="white", corner_radius=12)
+        card_inst = ctk.CTkFrame(self.lado, fg_color=CARD, corner_radius=12)
         card_inst.pack(fill="x", padx=16, pady=(0, 10))
         f_top_inst = ctk.CTkFrame(card_inst, fg_color="transparent")
         f_top_inst.pack(fill="x", padx=10, pady=8)
@@ -227,7 +229,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(f_top_inst, text="", image=self._imagen(img_esc)).pack(side="left", padx=(0, 8))
         else:
             ctk.CTkLabel(f_top_inst, text="U.E.", width=34, height=34, corner_radius=17, fg_color=MORADO,
-                         text_color="white", font=(F_TITULO, 11, "bold")).pack(side="left", padx=(0, 8))
+                         text_color=SIDEBAR_TEXTO, font=(F_TITULO, 11, "bold")).pack(side="left", padx=(0, 8))
 
         f_txt_inst = ctk.CTkFrame(f_top_inst, fg_color="transparent")
         f_txt_inst.pack(side="left", fill="both", expand=True)
@@ -235,7 +237,7 @@ class App(ctk.CTk):
             f_txt_inst,
             text="U.E. Prof. Aristóbulo Istúriz",
             font=(F_TEXTO, 9.5, "bold"),
-            text_color=MORADO,
+            text_color=TEXTO,
             anchor="w",
             wraplength=145,
             justify="left"
@@ -244,12 +246,12 @@ class App(ctk.CTk):
             f_txt_inst,
             text="Cabimas, Zulia",
             font=(F_TEXTO, 8.5),
-            text_color="#6B7280",
+            text_color=SUAVE,
             anchor="w"
         ).pack(fill="x")
 
         # Tarjeta visual de sesión activa (RBAC)
-        card_user = ctk.CTkFrame(self.lado, fg_color="#162C55", corner_radius=12)
+        card_user = ctk.CTkFrame(self.lado, fg_color=SIDEBAR_SUPERFICIE, corner_radius=12)
         card_user.pack(fill="x", padx=16, pady=(0, 12))
 
         nombre_u = getattr(config, "USUARIO_NOMBRE", "") or self.usuario_actual.get("username", "Usuario")
@@ -257,11 +259,11 @@ class App(ctk.CTk):
             card_user,
             text=f"👤  {nombre_u}",
             font=(F_TEXTO, 11, "bold"),
-            text_color="white",
+            text_color=SIDEBAR_TEXTO,
             anchor="w"
         ).pack(fill="x", padx=12, pady=(8, 2))
 
-        badge_color = ACENTO[0]
+        badge_color = ACENTO
         f_badge = ctk.CTkFrame(card_user, fg_color=badge_color, corner_radius=6)
         f_badge.pack(anchor="w", padx=12, pady=(0, 8))
         texto_badge = " Rol: Directiva " if self.es_duena else " Rol: Administración "
@@ -269,7 +271,7 @@ class App(ctk.CTk):
             f_badge,
             text=texto_badge,
             font=(F_TEXTO, 9, "bold"),
-            text_color="white"
+            text_color=PRIMARIO
         ).pack(padx=4, pady=1)
 
         # Menú de Navegación con RBAC estricto
@@ -286,8 +288,8 @@ class App(ctk.CTk):
 
         for clave, texto in items_menu:
             self.nav[clave] = ctk.CTkButton(
-                self.lado, text=texto, anchor="w", height=42, corner_radius=12,
-                fg_color="transparent", hover_color="#162C55", text_color="#E2E8F0",
+                self.lado, text=texto, anchor="w", height=38, corner_radius=10,
+                fg_color="transparent", hover_color=SIDEBAR_HOVER, text_color=SIDEBAR_TEXTO,
                 font=(F_TEXTO, 13, "bold"), command=lambda k=clave: self.mostrar(k)
             )
             self.nav[clave].pack(fill="x", padx=16, pady=2)
@@ -295,19 +297,22 @@ class App(ctk.CTk):
         # Controles inferiores (Cerrar sesión y Modo oscuro únicamente, cuadro del colegio movido arriba)
         btn_cerrar_sesion = ctk.CTkButton(
             self.lado, text="🚪  Cerrar Sesión", anchor="center", height=34, corner_radius=10,
-            fg_color="#162C55", hover_color="#1E3A6D", text_color="#FFFFFF",
+            fg_color=SIDEBAR_SUPERFICIE, hover_color=SIDEBAR_HOVER, text_color=SIDEBAR_TEXTO,
             font=(F_TEXTO, 11, "bold"), command=self.cerrar_sesion
         )
         btn_cerrar_sesion.pack(side="bottom", fill="x", padx=16, pady=(0, 14))
 
         self.oscuro = ctk.CTkSwitch(
-            self.lado, text="Modo oscuro", text_color="#E2E8F0", progress_color=ACENTO[0],
+            self.lado, text="Modo oscuro", text_color=SIDEBAR_TEXTO, progress_color=ACENTO,
             font=(F_TEXTO, 11), command=self._tema
         )
         self.oscuro.pack(side="bottom", pady=(0, 10))
 
     def _barra_herramientas_superior(self):
-        self.toolbar = ctk.CTkFrame(self.area_principal, height=48, fg_color="#FFFFFF", corner_radius=0, border_width=1, border_color="#E2E8F0")
+        self.toolbar = ctk.CTkFrame(
+            self.area_principal, height=48, fg_color=CARD, corner_radius=0,
+            border_width=1, border_color=BORDE
+        )
         self.toolbar.grid(row=0, column=0, sticky="ew")
         self.toolbar.pack_propagate(False)
         self.toolbar.grid_propagate(False)
@@ -319,9 +324,9 @@ class App(ctk.CTk):
             width=135,
             height=32,
             corner_radius=8,
-            fg_color=("#00B4D8", "#00B4D8"),
-            hover_color=("#0096B7", "#06B6D4"),
-            text_color=("#0F2042", "#0F2042"),
+            fg_color=ACENTO,
+            hover_color=ACENTO_H,
+            text_color=PRIMARIO,
             font=(F_TEXTO, 11, "bold"),
             command=self.toggle_sidebar
         )
@@ -332,7 +337,7 @@ class App(ctk.CTk):
             self.toolbar,
             text="Panel de Control · ⌂ Inicio",
             font=(F_TEXTO, 12, "bold"),
-            text_color=("#0F2042", "#FFFFFF")
+            text_color=TEXTO
         )
         self.l_modulo_activo.pack(side="left", padx=10)
 
@@ -344,7 +349,7 @@ class App(ctk.CTk):
             f_der_tool,
             text="",
             font=(F_TEXTO, 11, "bold"),
-            text_color=("#00B4D8", "#00B4D8")
+            text_color=ACENTO_TEXTO
         )
         self.l_reloj_tool.pack(side="left", padx=(0, 14))
 
@@ -354,14 +359,14 @@ class App(ctk.CTk):
             f_der_tool,
             text=f"👤 {nombre_u} [{rol_display}]",
             font=(F_TEXTO, 11, "bold"),
-            text_color=MORADO
+            text_color=TEXTO
         ).pack(side="left", padx=(0, 14))
 
         self.l_status_bd = ctk.CTkLabel(
             f_der_tool,
-            text="🟢 Conectado",
+            text="● Conectado",
             font=(F_TEXTO, 11),
-            text_color="#059669"
+            text_color=ACENTO_TEXTO
         )
         self.l_status_bd.pack(side="left")
 
@@ -408,16 +413,16 @@ class App(ctk.CTk):
             self.lado.grid_remove()
             self.btn_toggle_menu.configure(
                 text="☰  Mostrar Menú",
-                fg_color=("#00B4D8", "#00B4D8"),
-                hover_color=("#0096B7", "#06B6D4")
+                fg_color=ACENTO,
+                hover_color=ACENTO_H
             )
             self.sidebar_visible = False
         else:
             self.lado.grid()
             self.btn_toggle_menu.configure(
                 text="◀  Ocultar Menú",
-                fg_color=("#00B4D8", "#00B4D8"),
-                hover_color=("#0096B7", "#06B6D4")
+                fg_color=ACENTO,
+                hover_color=ACENTO_H
             )
             self.sidebar_visible = True
 
@@ -430,12 +435,16 @@ class App(ctk.CTk):
         ctk.set_appearance_mode("dark" if oscuro else "light")
         estilo_tablas()
         if hasattr(self, "toolbar"):
-            self.toolbar.configure(
-                fg_color="#0F2042" if oscuro else "#FFFFFF",
-                border_color="#1E3A6D" if oscuro else "#E2E8F0"
-            )
+            self.toolbar.configure(fg_color=CARD, border_color=BORDE)
         if hasattr(self, "l_modulo_activo"):
-            self.l_modulo_activo.configure(text_color="#FFFFFF" if oscuro else "#1E0B3A")
+            self.l_modulo_activo.configure(text_color=TEXTO)
+        for clave, boton_nav in self.nav.items():
+            activo = clave == getattr(self, "modulo_actual", None)
+            boton_nav.configure(
+                fg_color=ACENTO if activo else "transparent",
+                text_color=PRIMARIO if activo else SIDEBAR_TEXTO,
+                hover_color=ACENTO_H if activo else SIDEBAR_HOVER
+            )
         for v in self.vistas.values():
             v.actualizar_tema()
 
@@ -453,10 +462,11 @@ class App(ctk.CTk):
         for k, b in self.nav.items():
             activo = k == clave
             b.configure(
-                fg_color="#00B4D8" if activo else "transparent",
-                text_color="#0F2042" if activo else "#E2E8F0",
-                hover_color="#06B6D4" if activo else "#162C55"
+                fg_color=ACENTO if activo else "transparent",
+                text_color=PRIMARIO if activo else SIDEBAR_TEXTO,
+                hover_color=ACENTO_H if activo else SIDEBAR_HOVER
             )
+        self.modulo_actual = clave
         nombres_mod = {
             "inicio": "Panel de Control · ⌂ Inicio",
             "marcaje": "Asistencia Diaria · ✓ Marcaje Rápido",

@@ -1,0 +1,8 @@
+{
+  "id_usuario": 1,
+  "username": "directora",
+  "rol_sistema": "Directivo",
+  "cargo": "Directivo",
+  "es_duena": true,
+  "nombre_persona": "Carmen Morales"
+}

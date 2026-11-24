@@ -9,7 +9,7 @@ import sqlite3
 from tema import (
     ACENTO, ACENTO_H, AVISO, BG, BORDE, BURDEOS, CARD, ESTADO_COLOR,
     F_TEXTO, F_TITULO, LEMA, MORADO, MORADO_OSC, NOMBRE_SISTEMA,
-    OK, OK_H, PRIMARIO, PRIMARIO_H, SUAVE, SUAVE_BG, TEXTO
+    OK, OK_H, PRIMARIO, PRIMARIO_H, SUAVE, SUAVE_BG, TEXTO, colores_modo
 )
 
 
@@ -37,37 +37,54 @@ TABLAS = []
 
 def estilo_tablas():
     """Configura el tema y estilo de las tablas ttk según el modo de apariencia."""
-    bg, fg, zebra = CARD[0], TEXTO[0], SUAVE_BG[0]
+    oscuro = ctk.get_appearance_mode() == "Dark"
+    bg = colores_modo("card", oscuro)
+    fg = colores_modo("text", oscuro)
+    zebra = colores_modo("table_zebra", oscuro)
+    borde = colores_modo("border", oscuro)
+    acento = colores_modo("accent", oscuro)
+    acento_texto = colores_modo("accent_text", oscuro)
+    primario = colores_modo("primary", oscuro)
+    suave = colores_modo("muted", oscuro)
+    aviso = colores_modo("danger_text", oscuro)
     s = ttk.Style()
     s.theme_use("clam")
-    s.configure(
-        "Treeview",
-        background=bg,
-        fieldbackground=bg,
-        foreground=fg,
-        rowheight=36,
-        borderwidth=0,
-        font=(F_TEXTO, 11)
-    )
-    s.configure(
-        "Treeview.Heading",
-        background=CARD[0],
-        foreground=ACENTO[0],
-        font=(F_TEXTO, 11, "bold"),
-        relief="flat",
-        padding=(8, 10)
-    )
-    s.map(
-        "Treeview",
-        background=[("selected", ACENTO[0])],
-        foreground=[("selected", PRIMARIO[0])]
-    )
-    s.map("Treeview.Heading", background=[("active", MORADO_OSC)])
+    for estilo in ("Treeview", "Kiosco.Treeview"):
+        s.configure(
+            estilo,
+            background=bg,
+            fieldbackground=bg,
+            foreground=fg,
+            rowheight=36,
+            borderwidth=0,
+            font=(F_TEXTO, 11)
+        )
+        s.map(
+            estilo,
+            background=[("selected", acento)],
+            foreground=[("selected", primario)]
+        )
+    for estilo in ("Treeview.Heading", "Kiosco.Treeview.Heading"):
+        s.configure(
+            estilo,
+            background=bg,
+            foreground=acento_texto,
+            font=(F_TEXTO, 11, "bold"),
+            relief="flat",
+            padding=(8, 10)
+        )
+        s.map(estilo, background=[("active", borde)])
+
     vivas = []
     for t in TABLAS:
         try:
             if t.winfo_exists():
                 t.tag_configure("impar", background=zebra)
+                t.tag_configure("Presente", foreground=acento)
+                t.tag_configure("Retraso", foreground=aviso)
+                t.tag_configure("Salida Temprana", foreground=aviso)
+                t.tag_configure("Ausente", foreground=aviso)
+                t.tag_configure("pendiente", foreground=suave)
                 vivas.append(t)
         except Exception:
             pass
@@ -207,7 +224,8 @@ def segmentado(parent, **kw):
 
 
 def chip(parent, texto, color):
-    return ctk.CTkLabel(parent, text=f"  {texto}  ", fg_color=color, text_color="white", corner_radius=10,
+    color_texto = PRIMARIO if color in (ACENTO, OK) else "#FFFFFF"
+    return ctk.CTkLabel(parent, text=f"  {texto}  ", fg_color=color, text_color=color_texto, corner_radius=10,
                         height=24, font=(F_TEXTO, 11, "bold"))
 
 
@@ -234,12 +252,13 @@ def crear_tabla(parent, columnas, altura=10):
     sb_y.grid(row=0, column=1, sticky="ns")
     sb_x.grid(row=1, column=0, sticky="ew")
 
+    oscuro = ctk.get_appearance_mode() == "Dark"
     for tag, color in {
-        "Presente": ACENTO[0],
-        "Retraso": BURDEOS,
-        "Salida Temprana": BURDEOS,
-        "Ausente": BURDEOS,
-        "pendiente": SUAVE[0],
+        "Presente": colores_modo("accent", oscuro),
+        "Retraso": colores_modo("danger_text", oscuro),
+        "Salida Temprana": colores_modo("danger_text", oscuro),
+        "Ausente": colores_modo("danger_text", oscuro),
+        "pendiente": colores_modo("muted", oscuro),
     }.items():
         tree.tag_configure(tag, foreground=color)
     TABLAS.append(tree)

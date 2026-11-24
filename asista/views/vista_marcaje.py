@@ -6,8 +6,8 @@ from tkinter import messagebox
 import config
 from db import fmt_hora, resolver_turno_persona
 from tema import (
-    ACENTO, AVISO, BORDE, CARD, ESTADO_COLOR, F_TEXTO, F_TITULO, OK, PRIMARIO,
-    SUAVE, SUAVE_BG, TEXTO
+    ACENTO, ACENTO_H, ACENTO_TEXTO, AVISO, AVISO_BG, AVISO_TEXTO, BORDE, CARD,
+    ESTADO_COLOR, F_TEXTO, F_TITULO, OK, PRIMARIO, SUAVE, SUAVE_BG, TEXTO
 )
 from .ui_utils import Vista, seguro, tarjeta, campo, boton, etiqueta, area, chip, feedback_boton
 import contingencia
@@ -43,7 +43,7 @@ class Marcaje(Vista):
 
         self.sw_escaner = ctk.CTkSwitch(
             barra_protocolo, text="Modo Escáner / Lector de Carnets (Automático)",
-            font=(F_TEXTO, 13, "bold"), text_color=TEXTO, progress_color=ACENTO[0]
+            font=(F_TEXTO, 13, "bold"), text_color=TEXTO, progress_color=ACENTO
         )
         self.sw_escaner.select()  # Activado por defecto para facilitar el flujo en garita
         self.sw_escaner.pack(side="left")
@@ -56,16 +56,16 @@ class Marcaje(Vista):
         self.badge_escaner.pack(side="left", padx=14)
         ctk.CTkLabel(
             self.badge_escaner,
-            text="🟢 Captura Automática Manos Libres Activa (Sin Clic)",
+            text="✓ Captura Automática Manos Libres Activa (Sin Clic)",
             font=(F_TEXTO, 11, "bold"),
-            text_color=ACENTO
+            text_color=ACENTO_TEXTO
         ).pack(padx=10, pady=4)
 
         # Botón e indicador de contingencia
         self.btn_sync = ctk.CTkButton(
             barra_protocolo, text="Sincronizar Contingencia (0)",
             command=self.sincronizar_contingencia,
-            fg_color=AVISO[0], hover_color=AVISO[1], text_color="white",
+            fg_color=AVISO, hover_color=AVISO, text_color="#FFFFFF",
             height=32, corner_radius=16, font=(F_TEXTO, 11, "bold")
         )
         self.btn_sync.pack(side="right")
@@ -74,9 +74,9 @@ class Marcaje(Vista):
             barra_protocolo,
             text="Portal móvil",
             command=self._abrir_qr_movil,
-            fg_color=ACENTO[0],
-            hover_color=ACENTO[1],
-            text_color=PRIMARIO[0],
+            fg_color=ACENTO,
+            hover_color=ACENTO_H,
+            text_color=PRIMARIO,
             height=32,
             corner_radius=16,
             font=(F_TEXTO, 11, "bold"),
@@ -166,7 +166,7 @@ class Marcaje(Vista):
             self.f_horarios_info,
             text="",
             font=(F_TEXTO, 11),
-            text_color=ACENTO,
+            text_color=ACENTO_TEXTO,
             justify="left",
             anchor="w"
         )
@@ -245,7 +245,7 @@ class Marcaje(Vista):
         if n > 0:
             self.btn_sync.configure(
                 text=f"Sincronizar Contingencia ({n} pendientes)",
-                fg_color=ACENTO[0], hover_color=ACENTO[1]
+                fg_color=ACENTO, hover_color=ACENTO_H
             )
         else:
             self.btn_sync.configure(
@@ -284,12 +284,12 @@ class Marcaje(Vista):
             self.msg.configure(text="", fg_color="transparent", border_color="transparent")
             return
 
-        if color_texto in (OK[0], OK[1]):
-            fondo, borde, texto_color = (SUAVE_BG[0], BORDE[0], ACENTO[0])
+        if color_texto in (OK[0], OK[1], ACENTO[0], ACENTO[1]):
+            fondo, borde, texto_color = (SUAVE_BG, BORDE, ACENTO_TEXTO)
         elif color_texto in (AVISO[0], AVISO[1]):
-            fondo, borde, texto_color = ("#24151C", AVISO[0], "#E6C7D0")
+            fondo, borde, texto_color = (AVISO_BG, AVISO, AVISO_TEXTO)
         else:
-            fondo, borde, texto_color = (CARD[0], BORDE[0], ACENTO[0])
+            fondo, borde, texto_color = (CARD, BORDE, ACENTO_TEXTO)
         self.msg.configure(
             text=f"  {texto}", text_color=texto_color, fg_color=fondo, border_color=borde
         )
@@ -427,7 +427,7 @@ class Marcaje(Vista):
             id_usuario=config.USUARIO_ID
         )
         self.actualizar_contador_contingencia()
-        self._aviso(f"⚡ MODO CONTINGENCIA: Marcaje para C.I. {cedula} guardado localmente en búfer seguro.", AVISO[0])
+        self._aviso(f"⚡ MODO CONTINGENCIA: Marcaje para C.I. {cedula} guardado localmente en búfer seguro.", AVISO)
         self.e_ced.delete(0, "end")
         self.e_ced.focus_set()
 

@@ -4,7 +4,10 @@ import customtkinter as ctk
 
 from config import DIAS, HORA_LIMITE_ENTRADA, HORA_SALIDA_MINIMA, MESES
 from db import fmt_hora
-from tema import ACENTO, AVISO, BORDE, CARD, F_TEXTO, F_TITULO, OK, PRIMARIO, SUAVE, TEXTO
+from tema import (
+    ACENTO, ACENTO_SUAVE, ACENTO_TEXTO, AVISO, BORDE, F_TEXTO, F_TITULO,
+    MARRON, MARRON_BG, OK, PRIMARIO, SUAVE, SUAVE_BG, TEXTO
+)
 from .ui_utils import Vista, seguro, tarjeta, etiqueta, boton, campo, crear_tabla, insertar, limpiar
 from .componentes import Banner, Calendario
 
@@ -20,13 +23,14 @@ class Inicio(Vista):
         for i, (k, txt, col, glifo) in enumerate([
             ("asist", "Asistencias hoy", OK, "✓"),
             ("retr", "Retrasos", AVISO, "!"),
-            ("aus", "Ausencias", ACENTO, "✕"),
+            ("aus", "Ausencias", MARRON, "✕"),
             ("just", "Justificaciones", PRIMARIO, "✎")
         ]):
             fila.grid_columnconfigure(i, weight=1, uniform="c")
             c = tarjeta(fila)
             c.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 12, 0))
-            ctk.CTkLabel(c, text=glifo, width=50, height=50, corner_radius=16, fg_color=col, text_color="white",
+            color_glifo = PRIMARIO if col in (OK, ACENTO) else "#FFFFFF"
+            ctk.CTkLabel(c, text=glifo, width=50, height=50, corner_radius=16, fg_color=col, text_color=color_glifo,
                          font=(F_TEXTO, 20, "bold")).grid(row=0, column=0, rowspan=2, padx=(18, 12), pady=18)
             n = ctk.CTkLabel(c, text="0", font=(F_TEXTO, 32, "bold"), text_color=TEXTO, anchor="w")
             n.grid(row=0, column=1, sticky="sw", pady=(14, 0))
@@ -110,16 +114,19 @@ class Inicio(Vista):
         f_reloj_head.pack(fill="x", padx=16, pady=(12, 2))
         ctk.CTkLabel(f_reloj_head, text="🕒 HORA EN TIEMPO REAL", font=(F_TEXTO, 10, "bold"), text_color=TEXTO).pack(side="left")
 
-        self.badge_turno = ctk.CTkFrame(f_reloj_head, fg_color=("#E0F2FE", "#162C55"), corner_radius=6)
+        self.badge_turno = ctk.CTkFrame(f_reloj_head, fg_color=ACENTO_SUAVE, corner_radius=6)
         self.badge_turno.pack(side="right")
-        self.l_turno_badge = ctk.CTkLabel(self.badge_turno, text="Turno Mañana", font=(F_TEXTO, 9, "bold"), text_color=("#0369A1", "#38BDF8"))
+        self.l_turno_badge = ctk.CTkLabel(
+            self.badge_turno, text="Turno Mañana", font=(F_TEXTO, 9, "bold"),
+            text_color=ACENTO_TEXTO
+        )
         self.l_turno_badge.pack(padx=6, pady=1)
 
         self.l_reloj_tiempo = ctk.CTkLabel(
             self.card_reloj,
             text="00:00:00 --",
             font=(F_TITULO, 28, "bold"),
-            text_color=PRIMARIO[0] if isinstance(PRIMARIO, tuple) else PRIMARIO
+            text_color=TEXTO
         )
         self.l_reloj_tiempo.pack(padx=16, pady=(2, 2))
 
@@ -169,6 +176,7 @@ class Inicio(Vista):
 
     def actualizar_tema(self):
         self.banner.actualizar_tema()
+        self.cal.dibujar()
 
     def ir_marcaje(self):
         cedula = self.e_ced.get().strip()
@@ -266,7 +274,7 @@ class Inicio(Vista):
         for c in clases:
             card_c = ctk.CTkFrame(
                 self.f_clases_vivo,
-                fg_color=("#F8FAFC", "#162C55"),
+                fg_color=SUAVE_BG,
                 border_width=1,
                 border_color=BORDE,
                 corner_radius=12
@@ -293,19 +301,19 @@ class Inicio(Vista):
             est_sesion = c.get("estado_sesion") or "Abierta"
 
             if est_sesion == "Cerrada":
-                badge_bg = ("#E2E8F0", "#1E3A6D")
-                badge_fg = ("#475569", "#BAE6FD")
+                badge_bg = SUAVE_BG
+                badge_fg = SUAVE
                 h_c = str(c.get("hora_cierre"))[:5] if c.get("hora_cierre") else ""
                 badge_txt = f"🔒 Concluida ({h_c})" if h_c else "🔒 Concluida"
             elif marc > 0:
                 pct = int((pres / insc * 100)) if insc > 0 else 100
-                badge_bg = ("#ECFDF5", "#064E3B")
-                badge_fg = ("#059669", "#34D399")
-                badge_txt = f"🟢 En Clase ({pres}/{insc} · {pct}%)"
+                badge_bg = ACENTO_SUAVE
+                badge_fg = ACENTO_TEXTO
+                badge_txt = f"✓ En Clase ({pres}/{insc} · {pct}%)"
             else:
-                badge_bg = ("#FFFBEB", "#78350F")
-                badge_fg = ("#D97706", "#FBBF24")
-                badge_txt = "🟡 En Espera"
+                badge_bg = MARRON_BG
+                badge_fg = MARRON
+                badge_txt = "• En Espera"
 
             f_badge = ctk.CTkFrame(f_top_c, fg_color=badge_bg, corner_radius=8)
             f_badge.pack(side="right")

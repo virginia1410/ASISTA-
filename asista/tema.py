@@ -8,34 +8,111 @@ from PIL import Image, ImageDraw
 NOMBRE_SISTEMA = "Asista"
 LEMA = "CONTROL DE ASISTENCIAS"
 
-# --- Colores de marca Institucional (Navy, cian y tonos mate) -----------------
-NAVY = "#040444"
-NAVY_OSC = "#08082D"
-TURQUESA = "#56E1E8"
-TURQUESA_OSC = "#35C8D1"
-BURDEOS = "#70283D"
-BURDEOS_OSC = "#542033"
-BLANCO = "#F3EFE8"
+# --- Paletas centralizadas de marca (modo claro / oscuro) ----------------------
+PALETA_CLARO = {
+    "bg": "#F7F9FC",
+    "card": "#FFFFFF",
+    "surface": "#EFF3F8",
+    "border": "#DFE6EF",
+    "text": "#040444",
+    "muted": "#667085",
+    "primary": "#040444",
+    "primary_hover": "#08082D",
+    "accent": "#56E1E8",
+    "accent_hover": "#35C8D1",
+    "accent_soft": "#E5F8FA",
+    "accent_text": "#07585D",
+    "danger": "#70283D",
+    "danger_bg": "#F5EAEE",
+    "danger_text": "#70283D",
+    "brown": "#72543F",
+    "brown_bg": "#F2ECE7",
+    "white": "#FFFFFF",
+    "sidebar": "#040444",
+    "sidebar_surface": "#10104C",
+    "sidebar_hover": "#171750",
+    "sidebar_text": "#F3EFE8",
+    "banner_start": "#FFFFFF",
+    "banner_end": "#EEF3F8",
+    "table_zebra": "#F5F7FA",
+}
 
-# Compatibilidad con módulos existentes que importan MORADO o NARANJA
-MORADO = NAVY
-MORADO_OSC = NAVY_OSC
-NARANJA = TURQUESA
+PALETA_OSCURO = {
+    "bg": "#040444",
+    "card": "#0D1538",
+    "surface": "#111D49",
+    "border": "#26385E",
+    "text": "#FFFFFF",
+    "muted": "#B9C4D8",
+    "primary": "#040444",
+    "primary_hover": "#08082D",
+    "accent": "#56E1E8",
+    "accent_hover": "#35C8D1",
+    "accent_soft": "#17384A",
+    "accent_text": "#56E1E8",
+    "danger": "#70283D",
+    "danger_bg": "#39202D",
+    "danger_text": "#E6C7D0",
+    "brown": "#80664F",
+    "brown_bg": "#30291F",
+    "white": "#FFFFFF",
+    "sidebar": "#03032F",
+    "sidebar_surface": "#101A43",
+    "sidebar_hover": "#1A2850",
+    "sidebar_text": "#F3EFE8",
+    "banner_start": "#040444",
+    "banner_end": "#08082D",
+    "table_zebra": "#111D49",
+}
 
-# Pares (modo claro, modo oscuro) para CustomTkinter
-PRIMARIO = (NAVY, NAVY)
-PRIMARIO_H = (NAVY_OSC, NAVY_OSC)
-ACENTO = (TURQUESA, TURQUESA)
-ACENTO_H = (TURQUESA_OSC, TURQUESA_OSC)
-OK = (TURQUESA, TURQUESA)
-OK_H = (TURQUESA_OSC, TURQUESA_OSC)
-AVISO = (BURDEOS, BURDEOS)
-BG = (NAVY, NAVY)
-CARD = ("#12131B", "#12131B")
-BORDE = ("#203C44", "#203C44")
-TEXTO = (BLANCO, BLANCO)
-SUAVE = ("#AAA6A1", "#AAA6A1")
-SUAVE_BG = ("#1B1A21", "#1B1A21")
+
+def colores_modo(token, oscuro=False):
+    """Obtiene un token visual concreto para Canvas y estilos ttk."""
+    paleta = PALETA_OSCURO if oscuro else PALETA_CLARO
+    return paleta[token]
+
+
+def _par(token):
+    return PALETA_CLARO[token], PALETA_OSCURO[token]
+
+
+NAVY = PALETA_CLARO["primary"]
+NAVY_OSC = PALETA_OSCURO["primary_hover"]
+TURQUESA = PALETA_CLARO["accent"]
+TURQUESA_OSC = PALETA_OSCURO["accent_hover"]
+BURDEOS = PALETA_CLARO["danger"]
+BURDEOS_OSC = PALETA_OSCURO["danger"]
+BLANCO = PALETA_CLARO["white"]
+MARRON = _par("brown")
+MARRON_BG = _par("brown_bg")
+AVISO_BG = _par("danger_bg")
+AVISO_TEXTO = _par("danger_text")
+ACENTO_TEXTO = _par("accent_text")
+SIDEBAR = _par("sidebar")
+SIDEBAR_SUPERFICIE = _par("sidebar_surface")
+SIDEBAR_HOVER = _par("sidebar_hover")
+SIDEBAR_TEXTO = _par("sidebar_text")
+
+# Compatibilidad con módulos que aún usan los nombres históricos.
+MORADO = _par("primary")
+MORADO_OSC = _par("primary_hover")
+NARANJA = _par("accent")
+NARANJA_H = _par("accent_hover")
+
+PRIMARIO = _par("primary")
+PRIMARIO_H = _par("primary_hover")
+ACENTO = _par("accent")
+ACENTO_H = _par("accent_hover")
+ACENTO_SUAVE = _par("accent_soft")
+OK = ACENTO
+OK_H = ACENTO_H
+AVISO = _par("danger")
+BG = _par("bg")
+CARD = _par("card")
+BORDE = _par("border")
+TEXTO = _par("text")
+SUAVE = _par("muted")
+SUAVE_BG = _par("surface")
 ESTADO_COLOR = {
     "Presente": OK,
     "Retraso": AVISO,
@@ -139,21 +216,25 @@ def logo_asista(alto=38, ancho_max=180, modo="blanco"):
 
 
 # --- Banner del panel: degradado Navy Blue institucional, destellos y marca de agua
-def banner_imagen(ancho, alto, radio=24):
+def banner_imagen(ancho, alto, radio=24, oscuro=False):
     s = 2
     W, H = ancho * s, alto * s
+    paleta = PALETA_OSCURO if oscuro else PALETA_CLARO
+    c1 = tuple(int(paleta["banner_start"][i:i + 2], 16) for i in (1, 3, 5))
+    c2 = tuple(int(paleta["banner_end"][i:i + 2], 16) for i in (1, 3, 5))
     base = Image.new("RGB", (W, H))
     d = ImageDraw.Draw(base)
-    c1, c2 = (4, 4, 68), (8, 8, 45)
     for x in range(W):
         t = x / max(W - 1, 1)
         d.line([(x, 0), (x, H)], fill=tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(3)))
     capa = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     cd = ImageDraw.Draw(capa)
-    cd.ellipse([W * 0.55, -H * 0.9, W * 1.05, H * 0.9], fill=(255, 255, 255, 12))
-    cd.ellipse([W * 0.86, H * 0.45, W * 1.2, H * 1.6], fill=(86, 225, 232, 36))
+    cd.ellipse([W * 0.55, -H * 0.9, W * 1.05, H * 0.9],
+               fill=(255, 255, 255, 20 if not oscuro else 12))
+    cd.ellipse([W * 0.86, H * 0.45, W * 1.2, H * 1.6], fill=(86, 225, 232, 30))
     base = Image.alpha_composite(base.convert("RGBA"), capa)
-    marca = logo_check("#FFFFFF", int(H * 0.60), 38)
+    color_marca = "#040444" if not oscuro else "#FFFFFF"
+    marca = logo_check(color_marca, int(H * 0.60), 18 if not oscuro else 38)
     base.alpha_composite(marca, (max(0, W - marca.width - int(W * 0.07)), (H - marca.height) // 2))
     mascara = Image.new("L", (W, H), 0)
     ImageDraw.Draw(mascara).rounded_rectangle([0, 0, W - 1, H - 1], radius=radio * s, fill=255)

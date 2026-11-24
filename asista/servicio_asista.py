@@ -40,6 +40,7 @@ if str(BASE_DIR) not in sys.path:
 
 import config
 from db import Database, resolver_turno_persona
+from tema import PALETA_CLARO, PALETA_OSCURO
 
 # Configuración de logs
 LOG_FILE = BASE_DIR / "servicio_asista.log"
@@ -79,6 +80,9 @@ def render_mobile_html(template):
     html = template.replace(
         "{{ url_for('static', filename='img/logo.png') }}", static_logo_url
     )
+    for mode_name, palette in (("CLARO", PALETA_CLARO), ("OSCURO", PALETA_OSCURO)):
+        for token, color in palette.items():
+            html = html.replace(f"__ASISTA_{mode_name}_{token.upper()}__", color)
     return html.replace("</head>", f"<script>{MOBILE_AUTH_SCRIPT}</script></head>", 1)
 
 
@@ -357,7 +361,7 @@ def _consultar_estado_local(puerto, esquema="http"):
     url = f"{esquema}://127.0.0.1:{puerto}/api/status"
     contexto = ssl._create_unverified_context() if esquema == "https" else None
     try:
-        with urllib.request.urlopen(url, timeout=0.15, context=contexto) as respuesta:
+        with urllib.request.urlopen(url, timeout=1.0, context=contexto) as respuesta:
             estado = json.loads(respuesta.read(2048).decode("utf-8"))
     except (OSError, ssl.SSLError, urllib.error.URLError, ValueError):
         return None
@@ -506,7 +510,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
         .brand-header { max-width: 520px; margin: 12px auto 8px; padding: 0 12px; }
         .brand-frame {
             min-height: 72px; display: grid; place-items: center; padding: 8px;
-            background: linear-gradient(180deg, #12131B, #0C0D18);
+            background: linear-gradient(180deg, var(--card), var(--bg));
             border: 1px solid var(--borde); border-radius: 16px;
         }
         .brand-frame img { display: block; max-height: 52px; width: auto; }
@@ -2179,18 +2183,36 @@ HTML_SCANNER = """<!DOCTYPE html>
     <script src="/static/zxing.js"></script>
     <style>
         :root {
-            --primario: #040444;
-            --primario-dark: #08082D;
-            --acento: #56E1E8;
-            --ok: #56E1E8;
-            --aviso: #70283D;
-            --aviso-bg: #24151C;
-            --rojo: #70283D;
-            --bg: #040444;
-            --card: #12131B;
-            --texto: #F3EFE8;
-            --suave: #AAA6A1;
-            --borde: rgba(86, 225, 232, 0.2);
+            --primario: __ASISTA_OSCURO_PRIMARY__;
+            --primario-dark: __ASISTA_OSCURO_PRIMARY_HOVER__;
+            --acento: __ASISTA_OSCURO_ACCENT__;
+            --ok: __ASISTA_OSCURO_ACCENT__;
+            --aviso: __ASISTA_OSCURO_DANGER__;
+            --aviso-bg: __ASISTA_OSCURO_DANGER_BG__;
+            --aviso-texto: __ASISTA_OSCURO_DANGER_TEXT__;
+            --rojo: __ASISTA_OSCURO_DANGER__;
+            --bg: __ASISTA_OSCURO_BG__;
+            --card: __ASISTA_OSCURO_CARD__;
+            --texto: __ASISTA_OSCURO_TEXT__;
+            --suave: __ASISTA_OSCURO_MUTED__;
+            --borde: __ASISTA_OSCURO_BORDER__;
+        }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --primario: __ASISTA_CLARO_PRIMARY__;
+                --primario-dark: __ASISTA_CLARO_PRIMARY_HOVER__;
+                --acento: __ASISTA_CLARO_ACCENT__;
+                --ok: __ASISTA_CLARO_ACCENT__;
+                --aviso: __ASISTA_CLARO_DANGER__;
+                --aviso-bg: __ASISTA_CLARO_DANGER_BG__;
+                --aviso-texto: __ASISTA_CLARO_DANGER_TEXT__;
+                --rojo: __ASISTA_CLARO_DANGER__;
+                --bg: __ASISTA_CLARO_BG__;
+                --card: __ASISTA_CLARO_CARD__;
+                --texto: __ASISTA_CLARO_TEXT__;
+                --suave: __ASISTA_CLARO_MUTED__;
+                --borde: __ASISTA_CLARO_BORDER__;
+            }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--texto); padding-bottom: 24px; }
@@ -2291,7 +2313,7 @@ HTML_SCANNER = """<!DOCTYPE html>
             background: rgba(86, 225, 232, 0.1); color: var(--acento);
         }
         .badge-status[data-state="online"] { background: rgba(86, 225, 232, 0.1); color: var(--acento); }
-        .badge-status[data-state="offline"] { background: rgba(112, 40, 61, 0.36); color: #E6C7D0; }
+        .badge-status[data-state="offline"] { background: var(--aviso-bg); color: var(--aviso-texto); }
         .secondary-feed { display: none; }
 
         .btn-tomar-foto {
@@ -2334,6 +2356,7 @@ HTML_SCANNER = """<!DOCTYPE html>
             border-radius: 12px;
             font-size: 15px;
             font-weight: 700;
+            background: var(--card);
             color: var(--texto);
             outline: none;
         }
@@ -2373,7 +2396,7 @@ HTML_SCANNER = """<!DOCTYPE html>
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         .result-success { background: rgba(86, 225, 232, 0.08); border: 1px solid var(--borde); color: var(--texto); }
-        .result-warning, .result-error { background: var(--aviso-bg); border: 1px solid var(--aviso); color: #E8D9DD; }
+        .result-warning, .result-error { background: var(--aviso-bg); border: 1px solid var(--aviso); color: var(--aviso-texto); }
         .res-nombre { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
         .res-det { font-size: 13px; font-weight: 600; }
 
@@ -2395,7 +2418,7 @@ HTML_SCANNER = """<!DOCTYPE html>
             border-radius: 10px;
         }
         .badge-presente { background: rgba(86, 225, 232, 0.1); color: var(--acento); }
-        .badge-retraso { background: rgba(112, 40, 61, 0.36); color: #E6C7D0; }
+        .badge-retraso { background: var(--aviso-bg); color: var(--aviso-texto); }
         .badge-salida { background: rgba(86, 225, 232, 0.1); color: var(--acento); }
 
         /* Modales */

@@ -9,8 +9,8 @@ from PIL import Image, ImageTk
 
 from config import MESES
 from tema import (
-    ACENTO, ACENTO_H, BLANCO, BORDE, BG, CARD, F_TEXTO, F_TITULO, PRIMARIO, PRIMARIO_H,
-    SUAVE, TEXTO, banner_imagen, logo_check, logo_institucion
+    ACENTO, ACENTO_H, ACENTO_TEXTO, BORDE, BG, CARD, F_TEXTO, F_TITULO, PRIMARIO,
+    SUAVE, SUAVE_BG, TEXTO, banner_imagen, colores_modo, logo_institucion
 )
 from .ui_utils import boton, campo, tarjeta, etiqueta, combo
 
@@ -31,8 +31,9 @@ class Banner(tk.Canvas):
         self.actualizar_tema()
 
     def actualizar_tema(self):
-        bg_col = BG[1 if ctk.get_appearance_mode() == "Dark" else 0] if isinstance(BG, tuple) else BG
-        self.configure(bg=bg_col)
+        oscuro = ctk.get_appearance_mode() == "Dark"
+        self.configure(bg=colores_modo("bg", oscuro))
+        self._dibujar()
 
     def poner(self, kicker, titulo, sub):
         self.textos = (kicker, titulo, sub)
@@ -48,17 +49,26 @@ class Banner(tk.Canvas):
         if w < 50:
             return
         self.delete("all")
-        self.foto = ImageTk.PhotoImage(banner_imagen(w, self.alto))
+        oscuro = ctk.get_appearance_mode() == "Dark"
+        self.foto = ImageTk.PhotoImage(banner_imagen(w, self.alto, oscuro=oscuro))
         self.create_image(0, 0, image=self.foto, anchor="nw")
         k, t, s = self.textos
-        acento_col = ACENTO[0] if isinstance(ACENTO, tuple) else ACENTO
-        self.create_text(38, 32, text=k, anchor="w", fill=ACENTO[0], font=(F_TEXTO, 10, "bold"))
+        acento_col = colores_modo("accent", oscuro)
+        self.create_text(38, 32, text=k, anchor="w", fill=colores_modo("accent_text", oscuro),
+                         font=(F_TEXTO, 10, "bold"))
         self.create_rectangle(38, 46, 86, 49, fill=acento_col, width=0)
-        self.create_text(38, 82, text=t, anchor="w", fill=BLANCO, font=(F_TITULO, 27, "bold"))
-        self.create_text(38, 116, text=s, anchor="w", fill="#C5C0BA", font=(F_TEXTO, 12))
+        self.create_text(38, 82, text=t, anchor="w", fill=colores_modo("text", oscuro),
+                         font=(F_TITULO, 27, "bold"))
+        self.create_text(38, 116, text=s, anchor="w", fill=colores_modo("muted", oscuro),
+                         font=(F_TEXTO, 12))
         if self.escudo_tk:
             x = max(0, w - 112)
-            self.create_rectangle(x, 14, w - 16, 126, fill=BLANCO, outline=acento_col, width=1)
+            self.create_rectangle(
+                x, 14, w - 16, 126,
+                fill=colores_modo("card", oscuro),
+                outline=colores_modo("border", oscuro),
+                width=1
+            )
             self.create_image((x + w - 16) // 2, 70, image=self.escudo_tk)
 
 
@@ -88,8 +98,8 @@ class Calendario(ctk.CTkFrame):
             for c, d in enumerate(sem):
                 if d:
                     es = d == hoy.day
-                    color_txt = "white" if es else (SUAVE[0] if isinstance(SUAVE, tuple) else SUAVE if c >= 5 else (TEXTO[0] if isinstance(TEXTO, tuple) else TEXTO))
-                    color_bg = PRIMARIO if es else "transparent"
+                    color_txt = PRIMARIO if es else SUAVE if c >= 5 else TEXTO
+                    color_bg = ACENTO if es else SUAVE_BG if c == 6 or c == 5 else "transparent"
                     ctk.CTkLabel(self.rejilla, text=str(d), width=34, height=30, corner_radius=15,
                                  font=(F_TEXTO, 12, "bold" if es else "normal"),
                                  fg_color=color_bg,
@@ -100,7 +110,7 @@ class Calendario(ctk.CTkFrame):
 class DialogoSelectorFecha(ctk.CTkToplevel):
     """Diálogo modal interactivo para selección visual de fecha (Día, Mes, Año)."""
     def __init__(self, master, fecha_inicial=None, al_seleccionar=None):
-        super().__init__(master, fg_color=BG[0] if isinstance(BG, tuple) else BG)
+        super().__init__(master, fg_color=BG)
         self.al_seleccionar = al_seleccionar
         self.fecha_actual = fecha_inicial or date.today()
 
@@ -176,13 +186,13 @@ class DialogoSelectorFecha(ctk.CTkToplevel):
                 es_hoy = (dia == date.today().day and mes_idx == date.today().month and anio == date.today().year)
                 es_sel = (dia == self.fecha_actual.day and mes_idx == self.fecha_actual.month and anio == self.fecha_actual.year)
 
-                color_btn = PRIMARIO if es_sel else ("#E2E8F0" if es_hoy else "transparent")
-                color_txt = "white" if es_sel else TEXTO
+                color_btn = ACENTO if es_sel else (SUAVE_BG if es_hoy else "transparent")
+                color_txt = PRIMARIO if es_sel else TEXTO
 
                 b = ctk.CTkButton(
                     self.f_dias, text=str(dia), width=34, height=34, corner_radius=17,
                     fg_color=color_btn, text_color=color_txt,
-                    hover_color=PRIMARIO_H, font=(F_TEXTO, 11, "bold" if (es_hoy or es_sel) else "normal"),
+                    hover_color=ACENTO_H, font=(F_TEXTO, 11, "bold" if (es_hoy or es_sel) else "normal"),
                     command=lambda d=dia: self._elegir(d, mes_idx, anio)
                 )
                 b.grid(row=fila + 1, column=col, padx=3, pady=3)
@@ -229,7 +239,7 @@ class DialogoQRMovil(ctk.CTkToplevel):
     """Ventana de acceso QR a la estación móvil de escaneo."""
 
     def __init__(self, master):
-        super().__init__(master, fg_color=BG[0] if isinstance(BG, tuple) else BG)
+        super().__init__(master, fg_color=BG)
         self.title("Asista · Estación Móvil de Escaneo")
         self.geometry("470x690")
         self.resizable(False, False)
@@ -251,15 +261,8 @@ class DialogoQRMovil(ctk.CTkToplevel):
             self._error_servicio = ""
         self.ip = self.ips[0] if self.ips else None
 
-        color_prim = PRIMARIO[0] if isinstance(PRIMARIO, tuple) else PRIMARIO
-        color_acento = ACENTO[0] if isinstance(ACENTO, tuple) else ACENTO
-        color_acento_h = ACENTO_H[0] if isinstance(ACENTO_H, tuple) else ACENTO_H
-        color_card = CARD[0] if isinstance(CARD, tuple) else CARD
-        color_borde = BORDE[0] if isinstance(BORDE, tuple) else BORDE
-        color_texto = TEXTO[0] if isinstance(TEXTO, tuple) else TEXTO
-
         cabecera = ctk.CTkFrame(
-            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=14
+            self, fg_color=CARD, border_width=1, border_color=BORDE, corner_radius=14
         )
         cabecera.pack(fill="x", padx=24, pady=(18, 12))
 
@@ -271,11 +274,11 @@ class DialogoQRMovil(ctk.CTkToplevel):
         marca = ctk.CTkFrame(cabecera, fg_color="transparent")
         marca.pack(side="left", fill="x", expand=True, pady=10)
         ctk.CTkLabel(
-            marca, text="ASISTA", font=(F_TITULO, 19, "bold"), text_color=color_texto, anchor="w"
+            marca, text="ASISTA", font=(F_TITULO, 19, "bold"), text_color=TEXTO, anchor="w"
         ).pack(fill="x")
         ctk.CTkLabel(
             marca, text="ESTACIÓN MÓVIL DE ESCANEO", font=(F_TEXTO, 10, "bold"),
-            text_color=color_acento, anchor="w"
+            text_color=ACENTO_TEXTO, anchor="w"
         ).pack(fill="x", pady=(2, 0))
 
         ctk.CTkLabel(
@@ -288,14 +291,14 @@ class DialogoQRMovil(ctk.CTkToplevel):
             f_ip = ctk.CTkFrame(self, fg_color="transparent")
             f_ip.pack(fill="x", padx=32, pady=(0, 8))
             ctk.CTkLabel(
-                f_ip, text="IP de red", font=(F_TEXTO, 11, "bold"), text_color=color_texto
+                f_ip, text="IP de red", font=(F_TEXTO, 11, "bold"), text_color=TEXTO
             ).pack(side="left", padx=(0, 10))
             self.cb_ip = combo(f_ip, values=self.ips, command=self._cambiar_ip, width=230, height=32)
             self.cb_ip.set(self.ip)
             self.cb_ip.pack(side="left")
 
         self.f_qr = ctk.CTkFrame(
-            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=18
+            self, fg_color=CARD, border_width=1, border_color=BORDE, corner_radius=18
         )
         self.f_qr.pack(pady=(0, 10), padx=24)
 
@@ -303,15 +306,15 @@ class DialogoQRMovil(ctk.CTkToplevel):
         self.lbl_qr.pack()
 
         f_url = ctk.CTkFrame(
-            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=12
+            self, fg_color=CARD, border_width=1, border_color=BORDE, corner_radius=12
         )
         f_url.pack(fill="x", padx=24, pady=(0, 8))
         ctk.CTkLabel(
             f_url, text="Enlace del escáner · protocolo y puerto activos",
-            font=(F_TEXTO, 10, "bold"), text_color=color_texto
+            font=(F_TEXTO, 10, "bold"), text_color=TEXTO
         ).pack(pady=(6, 0))
         self.lbl_url = ctk.CTkLabel(
-            f_url, text="", font=(F_TEXTO, 12, "bold"), text_color=color_acento,
+            f_url, text="", font=(F_TEXTO, 12, "bold"), text_color=ACENTO_TEXTO,
             wraplength=400, justify="center"
         )
         self.lbl_url.pack(padx=8, pady=(2, 6))
@@ -327,13 +330,13 @@ class DialogoQRMovil(ctk.CTkToplevel):
 
         self.btn_copiar = ctk.CTkButton(
             btn_box, text="Copiar URL", command=_copiar,
-            fg_color=color_acento, hover_color=color_acento_h, text_color=color_prim,
+            fg_color=ACENTO, hover_color=ACENTO_H, text_color=PRIMARIO,
             height=36, corner_radius=10, font=(F_TEXTO, 11, "bold")
         )
         self.btn_copiar.pack(fill="x")
 
         self.f_aviso = ctk.CTkFrame(
-            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=10
+            self, fg_color=CARD, border_width=1, border_color=BORDE, corner_radius=10
         )
         self.f_aviso.pack(fill="x", padx=24, pady=(0, 12))
         self.lbl_aviso = ctk.CTkLabel(
