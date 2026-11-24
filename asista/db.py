@@ -5,6 +5,7 @@ import os
 import re
 import sqlite3
 import subprocess
+import threading
 from contextlib import contextmanager
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -91,6 +92,10 @@ def _adaptar_params(params):
     """Adapta tipos de parámetros de Python para SQLite."""
     if not params:
         return ()
+    if isinstance(params, (str, bytes)):
+        params = (params,)
+    elif not isinstance(params, (list, tuple, set)):
+        params = (params,)
     new_p = []
     for p in params:
         if isinstance(p, Decimal):
@@ -187,6 +192,7 @@ def _crear_conexion_sqlite(ruta_bd):
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
 
     # Funciones de compatibilidad MySQL registradas en SQLite
     conn.create_function("CONCAT", -1, lambda *args: "".join(str(a) for a in args if a is not None))
@@ -254,22 +260,51 @@ class Database:
     def __init__(self, cfg=None):
         self.cfg = cfg or DB_CONFIG
         self.db_path = Path(self.cfg.get("database", DB_PATH))
-        self._conn = None
+        self._local = threading.local()
+
+    @property
+    def _conn(self):
+        return getattr(self._local, "conn", None)
+
+    @_conn.setter
+    def _conn(self, val):
+        self._local.conn = val
 
     # -- conexión -----------------------------------------------------------
     def connection(self):
-        if self._conn is None:
+        conn = getattr(self._local, "conn", None)
+        if conn is None:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             nueva_conexion = _crear_conexion_sqlite(self.db_path)
             try:
                 self._asegurar_tablas_base(nueva_conexion, self.db_path)
                 self._asegurar_columna_foto(nueva_conexion)
                 self._asegurar_esquema_auth(nueva_conexion)
+                self._asegurar_indices_integridad(nueva_conexion)
             except Exception:
                 nueva_conexion.close()
                 raise
-            self._conn = nueva_conexion
-        return self._conn
+            self._local.conn = nueva_conexion
+            conn = nueva_conexion
+        return conn
+
+    @staticmethod
+    def _asegurar_indices_integridad(conn):
+        """Asegura que los índices únicos de integridad existan para evitar duplicados en SQLite."""
+        cur = conn.cursor()
+        try:
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_asistencia_persona_fecha ON asistencia (id_persona, fecha);")
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_asistencia_cohorte_persona_fecha ON asistencia_curso (id_cohorte, id_persona, fecha);")
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_sesion_cohorte_fecha ON sesion_clase (id_cohorte, fecha);")
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_matricula_persona_cohorte ON matricula (id_persona, id_cohorte);")
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        finally:
+            cur.close()
 
     @staticmethod
     def _asegurar_tablas_base(conn, db_path):
@@ -325,14 +360,20 @@ class Database:
         raw_cur = conn.cursor()
         cur = _CursorProxy(raw_cur)
         try:
+            if transaccion and not conn.in_transaction:
+                try:
+                    raw_cur.execute("BEGIN IMMEDIATE")
+                except Exception:
+                    pass
             yield cur
             if transaccion:
                 conn.commit()
         except Exception:
-            try:
-                conn.rollback()
-            except Exception:
-                pass
+            if transaccion:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
             raise
         finally:
             cur.close()
@@ -687,8 +728,8 @@ class Database:
         return self.fetch_one(PERSONA_SQL + " WHERE p.id_persona = %s", (id_persona,))
 
     def procesar_marcaje(self, cedula, id_usuario=None):
-        """Procesa un marcaje de asistencia autónomo (Entrada o Salida) según horarios institucionales."""
-        from datetime import date, datetime
+        """Procesa un marcaje de asistencia autónomo (Entrada o Salida) según horarios institucionales y valida duplicados."""
+        from datetime import date, datetime, time
         p = self.persona_por_cedula(cedula)
         if not p:
             return {
@@ -731,6 +772,37 @@ class Database:
                 "mensaje": f"✓ Entrada registrada a las {ahora.strftime('%I:%M %p')} · {estado} (Turno {turno_activo})"
             }
         elif ex["hora_salida"] is None:
+            # Validación anti-duplicados por doble escaneo accidental (< 120 segundos)
+            h_ent = ex.get("hora_entrada")
+            t_ent = None
+            if isinstance(h_ent, str):
+                try:
+                    t_ent = datetime.strptime(h_ent[:8], "%H:%M:%S").time()
+                except Exception:
+                    pass
+            elif isinstance(h_ent, time):
+                t_ent = h_ent
+
+            if t_ent:
+                dt_ent = datetime.combine(hoy, t_ent)
+                seg_dif = (ahora - dt_ent).total_seconds()
+                if 0 <= seg_dif < 120:
+                    return {
+                        "ok": False,
+                        "duplicado": True,
+                        "tipo": "Entrada",
+                        "persona": f"{p['nombre']} {p['apellido']}",
+                        "nombre": p["nombre"],
+                        "apellido": p["apellido"],
+                        "cedula": p["cedula"],
+                        "tipo_persona": p["tipo_persona"],
+                        "detalle": p["detalle"] or "",
+                        "turno": turno_activo,
+                        "hora": f"{t_ent:%H:%M:%S}",
+                        "hora_fmt": dt_ent.strftime("%I:%M %p"),
+                        "mensaje": f"ℹ Marcaje duplicado detectado: {p['nombre']} {p['apellido']} ya registró su Entrada a las {dt_ent.strftime('%I:%M %p')} (Turno {turno_activo})."
+                    }
+
             # REGISTRAR SALIDA
             temprana = hora < minima_salida
             estado = "Salida Temprana" if temprana else ex["estado"]
@@ -756,9 +828,11 @@ class Database:
             return {
                 "ok": False,
                 "ya_completado": True,
+                "duplicado": True,
                 "persona": f"{p['nombre']} {p['apellido']}",
                 "cedula": p["cedula"],
-                "mensaje": f"ℹ {p['nombre']} {p['apellido']} ya completó su entrada y salida hoy."
+                "turno": turno_activo,
+                "mensaje": f"ℹ {p['nombre']} {p['apellido']} ya completó su entrada y salida del Turno {turno_activo} hoy."
             }
 
     def listar_personas(self, texto="", tipo="Todos"):
@@ -802,23 +876,42 @@ class Database:
     def asistencia_de(self, id_persona, fecha):
         return self.fetch_one("SELECT * FROM asistencia WHERE id_persona = %s AND fecha = %s", (id_persona, fecha))
 
-    def registrar_entrada(self, id_persona, fecha, hora, estado, obs, id_usuario, existe):
-        if existe:
-            self.execute("UPDATE asistencia SET hora_entrada=%s, estado=%s, observaciones=%s, "
-                         "id_usuario_registro=%s WHERE id_persona=%s AND fecha=%s",
-                         (hora, estado, obs, id_usuario, id_persona, fecha))
-        else:
-            self.execute("INSERT INTO asistencia (id_persona, fecha, hora_entrada, estado, observaciones, "
-                         "id_usuario_registro) VALUES (%s, %s, %s, %s, %s, %s)",
-                         (id_persona, fecha, hora, estado, obs, id_usuario))
+    def registrar_entrada(self, id_persona, fecha, hora, estado, obs, id_usuario, existe=False):
+        """Registra la entrada garantizando atomicidad y previniendo duplicados en SQLite."""
+        with self.cursor(transaccion=True) as cur:
+            sql = """
+                INSERT INTO asistencia (id_persona, fecha, hora_entrada, estado, observaciones, id_usuario_registro)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT(id_persona, fecha) DO UPDATE SET
+                    hora_entrada = CASE 
+                        WHEN asistencia.hora_entrada IS NULL THEN excluded.hora_entrada 
+                        ELSE asistencia.hora_entrada 
+                    END,
+                    estado = CASE 
+                        WHEN asistencia.estado = 'Ausente' THEN excluded.estado 
+                        ELSE asistencia.estado 
+                    END,
+                    observaciones = CASE 
+                        WHEN asistencia.observaciones IS NULL OR asistencia.observaciones = '' THEN excluded.observaciones 
+                        ELSE asistencia.observaciones 
+                    END,
+                    id_usuario_registro = COALESCE(excluded.id_usuario_registro, asistencia.id_usuario_registro)
+            """
+            cur.execute(sql, (id_persona, fecha, hora, estado, obs, id_usuario))
 
     def registrar_salida(self, id_asistencia, hora, estado, obs):
-        self.execute("UPDATE asistencia SET hora_salida=%s, estado=%s, observaciones=%s WHERE id_asistencia=%s",
-                     (hora, estado, obs, id_asistencia))
+        with self.cursor(transaccion=True) as cur:
+            cur.execute("UPDATE asistencia SET hora_salida=%s, estado=%s, observaciones=%s WHERE id_asistencia=%s",
+                         (hora, estado, obs, id_asistencia))
 
     def registrar_ausencia(self, id_persona, fecha, obs, id_usuario):
-        self.execute("INSERT INTO asistencia (id_persona, fecha, estado, observaciones, id_usuario_registro) "
-                     "VALUES (%s, %s, 'Ausente', %s, %s)", (id_persona, fecha, obs, id_usuario))
+        with self.cursor(transaccion=True) as cur:
+            sql = """
+                INSERT INTO asistencia (id_persona, fecha, estado, observaciones, id_usuario_registro)
+                VALUES (%s, %s, 'Ausente', %s, %s)
+                ON CONFLICT(id_persona, fecha) DO NOTHING
+            """
+            cur.execute(sql, (id_persona, fecha, obs, id_usuario))
 
     # -- justificaciones y cierres -----------------------------------------
     def no_presentes(self, fecha):

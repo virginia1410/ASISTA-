@@ -3444,6 +3444,29 @@ self.addEventListener('fetch', (e) => {
                     )
                     return
 
+                # Validación anti-duplicados previa en servidor
+                asist_ant = db_instancia.fetch_one(
+                    "SELECT id_asistencia_curso, estado, hora FROM asistencia_curso "
+                    "WHERE id_persona = %s AND id_cohorte = %s AND fecha = %s",
+                    (id_persona, id_cohorte, hoy)
+                )
+                if asist_ant and asist_ant.get("estado") == estado:
+                    persona = db_instancia.persona_por_id(id_persona)
+                    nom = f"{persona['nombre']} {persona['apellido']}" if persona else "Estudiante"
+                    mat = db_instancia.fetch_one("SELECT porcentaje_asistencia FROM matricula WHERE id_persona=%s AND id_cohorte=%s", (id_persona, id_cohorte))
+                    pct = float(mat["porcentaje_asistencia"]) if mat else 100.0
+                    hora_existente = asist_ant.get("hora") or ""
+                    self._responder_json({
+                        "ok": True,
+                        "duplicado": True,
+                        "estudiante": nom,
+                        "estado": estado,
+                        "hora": hora_existente,
+                        "pct_asistencia": pct,
+                        "mensaje": f"ℹ {nom} ya tenía registrada su asistencia como '{estado}' hoy."
+                    })
+                    return
+
                 ahora = datetime.now().time()
                 db_instancia.registrar_asistencia_estudiante_curso(
                     id_persona, id_cohorte, hoy, ahora, estado, obs,
@@ -3569,19 +3592,38 @@ self.addEventListener('fetch', (e) => {
                 procesados = 0
                 hoy = date.today()
                 ahora = datetime.now().time()
-                for r in registros:
+
+                # Desduplicar registros en el lote recibido: conservar el último registro por alumno, cohorte y fecha
+                registros_unicos = {}
+                for reg in registros:
+                    if isinstance(reg, dict):
+                        k = (
+                            reg.get("id_persona") or reg.get("_id_persona_autorizado") or reg.get("cedula"),
+                            int(reg.get("id_cohorte", 0)),
+                            reg.get("fecha") or str(hoy)
+                        )
+                        registros_unicos[k] = reg
+
+                for r in registros_unicos.values():
                     try:
                         id_p = r.get("id_persona") or r.get("_id_persona_autorizado")
                         id_c = int(r.get("id_cohorte", 0))
                         est = r.get("estado", "Presente")
                         ced = r.get("cedula")
+                        f_reg = r.get("fecha") or hoy
+                        if isinstance(f_reg, str) and len(f_reg) >= 10:
+                            try:
+                                f_reg = datetime.strptime(f_reg[:10], "%Y-%m-%d").date()
+                            except Exception:
+                                f_reg = hoy
+
                         if not id_p and ced:
                             p = db_instancia.persona_por_cedula(ced)
                             if p:
                                 id_p = p["id_persona"]
                         if id_p and id_c:
                             db_instancia.registrar_asistencia_estudiante_curso(
-                                id_p, id_c, hoy, ahora, est, "Sync Offline Celular",
+                                id_p, id_c, f_reg, ahora, est, "Sync Offline Celular",
                                 self.usuario_api["id_usuario"]
                             )
                             procesados += 1

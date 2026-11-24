@@ -713,6 +713,17 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             self.after(1800, lambda: self.card_res.configure(border_color=BORDE[0]))
             self.cargar_feed_hoy()
 
+        elif res.get("duplicado"):
+            _beep_alerta()
+            self.avatar.configure(text="ℹ", fg_color="#F59E0B")
+            p_nom = res.get("persona") or "Persona"
+            self.l_nombre.configure(text=p_nom)
+            self.l_detalle.configure(text=res.get("mensaje", "Marcaje duplicado detectado para esta fecha y turno."))
+            self.badge_estado.configure(text="YA REGISTRADO", fg_color="#FEF3C7", text_color="#92400E")
+            self.card_res.configure(border_color="#F59E0B")
+            self.lbl_cam_feedback.configure(text="ℹ " + res.get("mensaje", "Marcaje duplicado"), text_color="#92400E")
+            self.cargar_feed_hoy()
+
         elif res.get("ya_completado"):
             _beep_alerta()
             self.avatar.configure(text="✓", fg_color="#F59E0B")

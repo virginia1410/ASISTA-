@@ -363,6 +363,28 @@ class Marcaje(Vista):
                 self._guardar_contingencia_automatica(cedula, hoy, hora, p["id_persona"], "Entrada", estado, obs)
 
         elif ex["hora_salida"] is None:
+            # Validar si es doble escaneo / duplicado accidental (< 120 segundos tras la entrada)
+            h_ent = ex.get("hora_entrada")
+            t_ent = None
+            if isinstance(h_ent, str):
+                try:
+                    t_ent = datetime.strptime(h_ent[:8], "%H:%M:%S").time()
+                except Exception:
+                    pass
+            elif isinstance(h_ent, datetime):
+                t_ent = h_ent.time()
+            elif hasattr(h_ent, "strftime"):
+                t_ent = h_ent
+
+            if t_ent:
+                dt_ent = datetime.combine(hoy, t_ent)
+                if 0 <= (ahora - dt_ent).total_seconds() < 120:
+                    _beep_alerta()
+                    self._aviso(f"ℹ Doble lectura prevenida: {p['nombre']} ya registró su Entrada a las {dt_ent.strftime('%I:%M %p')} (Turno {turno_activo}).", AVISO)
+                    self.e_ced.delete(0, "end")
+                    self.e_ced.focus_set()
+                    return
+
             # REGISTRAR SALIDA
             temprana = hora < minima_salida
             estado = "Salida Temprana" if temprana else ex["estado"]
