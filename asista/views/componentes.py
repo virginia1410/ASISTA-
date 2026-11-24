@@ -299,19 +299,22 @@ class DialogoQRMovil(ctk.CTkToplevel):
         self.lbl_qr = ctk.CTkLabel(self.f_qr, text="")
         self.lbl_qr.pack()
 
-        # Enlace directo
+        # Enlace completo para verificar protocolo, IP y puerto del QR
         f_url = ctk.CTkFrame(self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=10)
         f_url.pack(fill="x", padx=30, pady=(0, 8))
-        self.lbl_url = ctk.CTkLabel(f_url, text="", font=(F_TEXTO, 12, "bold"), text_color=color_prim)
-        self.lbl_url.pack(pady=6)
+        ctk.CTkLabel(
+            f_url, text="Enlace del portal · protocolo, IP y puerto",
+            font=(F_TEXTO, 10, "bold"), text_color=color_texto
+        ).pack(pady=(6, 0))
+        self.lbl_url = ctk.CTkLabel(
+            f_url, text="", font=(F_TEXTO, 12, "bold"), text_color=color_prim,
+            wraplength=400, justify="center"
+        )
+        self.lbl_url.pack(padx=8, pady=(2, 6))
 
-        # Botón para abrir en PC, copiar enlace o escanear en laptop
+        # Copiar el mismo enlace codificado en el QR
         btn_box = ctk.CTkFrame(self, fg_color="transparent")
         btn_box.pack(fill="x", padx=30, pady=(0, 6))
-
-        def _abrir_nav():
-            import webbrowser
-            webbrowser.open(self.url_actual)
 
         def _copiar():
             self.clipboard_clear()
@@ -319,21 +322,12 @@ class DialogoQRMovil(ctk.CTkToplevel):
             self.btn_copiar.configure(text="✓ ¡Copiado!")
             self.after(2000, lambda: self.btn_copiar.configure(text="Copiar Enlace"))
 
-        ctk.CTkButton(
-            btn_box, text="🌐 Abrir en PC", command=_abrir_nav,
-            fg_color=color_prim, hover_color=color_prim_h, height=32, corner_radius=10, font=(F_TEXTO, 11, "bold")
-        ).pack(side="left", expand=True, fill="x", padx=(0, 4))
-
         self.btn_copiar = ctk.CTkButton(
             btn_box, text="Copiar Enlace", command=_copiar,
-            fg_color="#F3F4F6", hover_color="#E5E7EB", text_color=color_texto, height=32, corner_radius=10, font=(F_TEXTO, 11, "bold")
+            fg_color=color_prim, hover_color=color_prim_h, text_color="white",
+            height=34, corner_radius=10, font=(F_TEXTO, 11, "bold")
         )
-        self.btn_copiar.pack(side="left", expand=True, fill="x", padx=(4, 4))
-
-        ctk.CTkButton(
-            btn_box, text="💻 Cámara Laptop", command=self._iniciar_escaner_pc,
-            fg_color="#0F766E", hover_color="#0D9488", text_color="white", height=32, corner_radius=10, font=(F_TEXTO, 11, "bold")
-        ).pack(side="right", expand=True, fill="x", padx=(4, 0))
+        self.btn_copiar.pack(fill="x")
 
         # Aviso de uso para cámara en vivo
         self.f_aviso = ctk.CTkFrame(self, fg_color="#F0F9FF", border_width=1, border_color="#BAE6FD", corner_radius=8)
@@ -378,28 +372,3 @@ class DialogoQRMovil(ctk.CTkToplevel):
             self.lbl_qr.configure(image=self._img_tk)
         except Exception as e:
             self.lbl_qr.configure(text=f"Código QR no disponible: {e}")
-
-    def _iniciar_escaner_pc(self):
-        """Lanza el escáner de webcam de la laptop."""
-        try:
-            from .mobile_scanner import lanzar_escanner
-            def _on_success(codigo):
-                import json, urllib.request
-                try:
-                    payload = json.dumps({"cedula": codigo}).encode("utf-8")
-                    req = urllib.request.Request(
-                        f"http://127.0.0.1:{self.puerto}/api/marcar",
-                        data=payload,
-                        headers={"Content-Type": "application/json"},
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=5) as resp:
-                        data = json.load(resp)
-                        msg = data.get("mensaje", "")
-                        nom = data.get("persona") or data.get("nombre", "")
-                        messagebox.showinfo("Marcaje Exitoso", f"Cédula: {codigo}\n{nom}\n{msg}")
-                except Exception as ex:
-                    messagebox.showerror("Error", f"No se pudo registrar: {ex}")
-            lanzar_escanner(self, _on_success)
-        except Exception as err:
-            messagebox.showwarning("Aviso", f"No se pudo iniciar la cámara de la laptop: {err}")

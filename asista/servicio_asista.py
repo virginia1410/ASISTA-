@@ -418,7 +418,8 @@ HTML_PROFESOR = """<!DOCTYPE html>
             --borde: #D9E2EC;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: var(--bg); color: var(--texto); padding-bottom: 60px; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--texto); padding-bottom: 24px; -webkit-tap-highlight-color: transparent; }
+        #pwaBanner, #modalInstalarApp { display: none !important; }
 
         .mobile-page-heading { margin-bottom: 12px; }
         .header-actions { display: flex; align-items: center; gap: 6px; }
@@ -610,6 +611,15 @@ HTML_PROFESOR = """<!DOCTYPE html>
         }
         .scanner-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
         .scanner-badge { background: rgba(0, 180, 216, 0.2); color: #A5F3FC; font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: 800; }
+        .connection-status {
+            display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 999px;
+            font-size: 10px; font-weight: 800; white-space: nowrap;
+        }
+        .connection-status[data-state="checking"], .connection-status[data-state="sending"] {
+            color: #FDE68A; background: rgba(245, 158, 11, 0.18);
+        }
+        .connection-status[data-state="online"] { color: #A7F3D0; background: rgba(16, 185, 129, 0.18); }
+        .connection-status[data-state="offline"] { color: #FECACA; background: rgba(239, 68, 68, 0.2); }
 
         .btn-tomar-foto {
             display: flex;
@@ -685,11 +695,23 @@ HTML_PROFESOR = """<!DOCTYPE html>
             border-left-color: var(--rojo);
             box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
         }
+        .toast-confirm.toast-duplicate {
+            border-left-color: var(--aviso);
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+        }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         .toast-title { font-size: 13px; font-weight: 800; color: var(--ok); margin-bottom: 2px; }
         .toast-confirm.toast-error .toast-title { color: var(--rojo); }
+        .toast-confirm.toast-duplicate .toast-title { color: #92400E; }
         .toast-desc { font-size: 13px; font-weight: 700; color: var(--texto); }
         .toast-meta { font-size: 11px; color: var(--suave); margin-top: 2px; }
+        .attendance-tools { margin: 8px 0 16px; }
+        .attendance-tools > summary {
+            padding: 11px 14px; border: 1px solid var(--borde); border-radius: 12px;
+            background: var(--card); color: var(--primario); font-size: 12px;
+            font-weight: 800; cursor: pointer; list-style-position: inside;
+        }
+        .attendance-tools[open] > summary { margin-bottom: 10px; }
 
         /* Lista de Estudiantes */
         .list-header {
@@ -886,7 +908,6 @@ HTML_PROFESOR = """<!DOCTYPE html>
         <div class="mobile-page-heading">
             <div class="header-actions">
                 <button onclick="cerrarSesionMovil()" class="btn-switch" style="background:#DC2626; border:none; cursor:pointer;">🚪 Salir</button>
-                <button onclick="instalarPwa()" class="btn-pwa-header">📲 App</button>
             </div>
             <div class="header-title-row">
                 <div class="header-title">Asistencia de Curso</div>
@@ -902,7 +923,6 @@ HTML_PROFESOR = """<!DOCTYPE html>
                         <div class="docente-cargo" id="txtDocenteCargo">Facilitador Titular</div>
                     </div>
                 </div>
-                <button class="btn-docente-change" style="background:#FEE2E2; color:#DC2626; border:none;" onclick="cerrarSesionMovil()">Cerrar Sesión</button>
             </div>
         </div>
 
@@ -953,8 +973,8 @@ HTML_PROFESOR = """<!DOCTYPE html>
         <!-- ESCÁNER EN TIEMPO REAL — PORTAL PROFESOR -->
         <div class="scanner-card">
             <div class="scanner-title">
-                <span>📷 Registrar asistencia</span>
-                <span class="scanner-badge">Cámara del teléfono</span>
+                <span>📷 Escaneo de carnet</span>
+                <span class="connection-status" id="estadoConexionProfesor" data-state="checking" aria-live="polite">Comprobando conexión…</span>
             </div>
 
 
@@ -962,7 +982,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
             <div id="panelHttpsAviso" style="display:none; background:#1E3A5F; border-radius:12px; padding:14px; margin-bottom:10px;">
                 <div style="color:#FCD34D; font-weight:800; font-size:13px; margin-bottom:8px;">⚠️ No se pudo abrir la cámara</div>
                 <div style="color:#BAE6FD; font-size:12px; line-height:1.5;">
-                    Permite el acceso a la cámara en el navegador. Si sigue sin funcionar, escribe la cédula abajo para registrar la asistencia.
+                    Permite el acceso a la cámara en la configuración del navegador y vuelve a iniciar el escáner.
                 </div>
             </div>
 
@@ -984,39 +1004,26 @@ HTML_PROFESOR = """<!DOCTYPE html>
                     Apunte al código del carnet
                 </div>
                 <div style="position:absolute;top:7px;right:7px;display:flex;gap:6px;z-index:10;">
-                    <button id="btnTorchProf" onclick="toggleLinternaProf()" title="Linterna / Flash" style="background:rgba(0,0,0,0.55);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">💡</button>
-                    <button onclick="alternarCamaraProf()" title="Cambiar Cámara" style="background:rgba(0,0,0,0.55);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🔄</button>
                     <button onclick="detenerCamaraProf()" title="Cerrar Cámara" style="background:rgba(0,0,0,0.55);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
                 </div>
             </div>
 
             <style>@keyframes scanLine{0%{top:0}50%{top:calc(100% - 2px)}100%{top:0}}</style>
 
-            <!-- Botones de cámara para el Profesor -->
-            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <button type="button" class="btn-tomar-foto" id="btnActivarCamaraProf" style="flex: 2; margin: 0; background: linear-gradient(135deg, #0284C7, #0369A1); font-size:16px;" onclick="activarCamaraProf()">
-                    <span>🎥 Iniciar Escáner en Vivo</span>
-                </button>
-                <button type="button" class="btn-tomar-foto" style="flex: 1; margin: 0; background: #475569; font-size:13px;" onclick="tomarFotoProfesorDirecta()">
-                    <span>📸 Foto</span>
-                </button>
-            </div>
-            <input type="file" id="inputFotoProfesor" accept="image/*" capture="environment" style="display:none" onchange="procesarFotoCarnetProfesor(event)">
-
-            <!-- Entrada Rápida por Dictado o Teclado -->
-            <form class="quick-form" onsubmit="event.preventDefault(); enviarCedulaManualProfesor();" style="margin-top:8px;">
-                <input type="text" id="inputCedulaManualProfesor" class="input-cedula" placeholder="O escribe la cédula..." autocomplete="off" inputmode="numeric">
-                <button type="submit" class="btn-marcar-submit">Marcar</button>
-            </form>
+            <button type="button" class="btn-tomar-foto" id="btnActivarCamaraProf" style="margin: 0; background: linear-gradient(135deg, #0284C7, #0369A1); font-size:16px;" onclick="activarCamaraProf()">
+                <span>🎥 Iniciar escáner en vivo</span>
+            </button>
         </div>
 
         <!-- Tarjeta de Confirmación de Marcaje -->
-        <div class="toast-confirm" id="toastConfirm">
+        <div class="toast-confirm" id="toastConfirm" aria-live="polite">
             <div class="toast-title" id="toastTitle">✓ Asistencia Guardada</div>
             <div class="toast-desc" id="toastNombre">Estudiante</div>
             <div class="toast-meta" id="toastMeta">Hora: --:-- | Asistencia: --%</div>
         </div>
 
+        <details class="attendance-tools">
+            <summary>Opciones adicionales de asistencia</summary>
         <!-- LISTA DE ESTUDIANTES CON BOTONES DE TOQUE -->
         <div class="card">
             <div class="list-header" style="flex-wrap: wrap; gap: 8px;">
@@ -1049,6 +1056,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
         <button class="btn-cerrar-clase" id="btnAbrirCierre" onclick="abrirModalCierre()">
             🔒 Cerrar Asistencia del Día (Firma Digital)
         </button>
+        </details>
 
     </div>
 
@@ -1427,7 +1435,25 @@ HTML_PROFESOR = """<!DOCTYPE html>
         let linternaEncendida = false;
         let facingModeActual = 'environment';
         let filtroBusquedaEstudiantes = '';
+        let marcajeEnCursoProf = false;
         const COOLDOWN_PROF = 2500;
+
+        function establecerEstadoConexionProfesor(estado, texto) {
+            const indicador = document.getElementById('estadoConexionProfesor');
+            indicador.dataset.state = estado;
+            indicador.textContent = texto;
+        }
+
+        async function comprobarConexionProfesor() {
+            if (marcajeEnCursoProf) return;
+            try {
+                const respuesta = await fetch('/api/status', {cache: 'no-store'});
+                if (!respuesta.ok) throw new Error('Servidor no disponible');
+                establecerEstadoConexionProfesor('online', 'Conectado');
+            } catch (_) {
+                establecerEstadoConexionProfesor('offline', 'Sin conexión');
+            }
+        }
 
         // Motores de detección (reutiliza detectorBD y zxingReader del scope global si están)
         let detBDProf = null;
@@ -1455,7 +1481,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
                         <div style="color:#FCD34D; font-weight:800; font-size:14px; margin-bottom:6px;">🎥 Escáner en Tiempo Real</div>
                         <div style="color:#BAE6FD; font-size:12px; line-height:1.5;">
                             Para escanear en tiempo real con video en vivo, abre el portal seguro:<br><br>
-                            <a href="${httpsUrl}" style="display:inline-block; background:#0284C7; color:white; padding:10px 14px; border-radius:8px; font-weight:800; text-decoration:none;">⚡ Toca aquí para abrir Cámara en Vivo</a><br><br>
+                            <a href="${httpsUrl}" style="display:inline-block; background:#0284C7; color:white; padding:10px 14px; border-radius:8px; font-weight:800; text-decoration:none; overflow-wrap:anywhere;">${httpsUrl}</a><br><br>
                             <small style="opacity:0.85;">(Si tu teléfono muestra <i>"La conexión no es privada"</i>, pulsa en <b>Configuración avanzada</b> → <b>Acceder a... (no seguro)</b>).</small>
                         </div>
                     `;
@@ -1488,8 +1514,15 @@ HTML_PROFESOR = """<!DOCTYPE html>
                     streamActivoProf = null;
                 }
                 btn.disabled = false;
-                btn.innerHTML = '<span>🎥 En Vivo</span>';
-                tomarFotoProfesorDirecta();
+                btn.innerHTML = '<span>🎥 Iniciar escáner en vivo</span>';
+                const panel = document.getElementById('panelHttpsAviso');
+                panel.style.display = 'block';
+                panel.innerHTML = `
+                    <div style="color:#FCD34D; font-weight:800; font-size:14px; margin-bottom:6px;">No se pudo abrir la cámara</div>
+                    <div style="color:#BAE6FD; font-size:12px; line-height:1.5;">
+                        Verifica los permisos de cámara del navegador y vuelve a intentarlo.
+                    </div>
+                `;
             }
         }
 
@@ -1702,7 +1735,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
             if (est && est.estado === 'Presente') {
                 reproducirAudioAviso();
                 if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-                mostrarToast(est.nombre_completo, `Ya registrado (${est.hora || 'Hoy'})`, est.hora || '--:--', est.pct_asistencia || 100, false);
+                mostrarToast(est.nombre_completo, `Ya registrado (${est.hora || 'Hoy'})`, est.hora || '--:--', est.pct_asistencia || 100, false, true);
                 return;
             }
 
@@ -1713,6 +1746,8 @@ HTML_PROFESOR = """<!DOCTYPE html>
                 estado: 'Presente'
             };
 
+            marcajeEnCursoProf = true;
+            establecerEstadoConexionProfesor('sending', 'Enviando…');
             try {
                 const res = await fetch('/api/marcar_asistencia_curso', {
                     method: 'POST',
@@ -1720,6 +1755,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
                     body: JSON.stringify(payload)
                 });
                 const r = await res.json();
+                establecerEstadoConexionProfesor('online', 'Conectado');
                 if (r.ok) {
                     reproducirAudioConfirmacion(true);
                     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
@@ -1734,10 +1770,13 @@ HTML_PROFESOR = """<!DOCTYPE html>
                     mostrarToast(r.mensaje || `C.I. ${cedula} no inscrita`, "No se pudo registrar", "--:--", "", true);
                 }
             } catch(e) {
+                establecerEstadoConexionProfesor('offline', 'Sin conexión');
                 guardarOffline(payload);
                 reproducirAudioConfirmacion(false);
                 mostrarToast('Guardado Offline en Celular', 'Presente', 'Pendiente Sync', '--');
                 if (idPersona) actualizarEstudianteLocal(idPersona, 'Presente', 'Offline');
+            } finally {
+                marcajeEnCursoProf = false;
             }
         }
 
@@ -1806,14 +1845,13 @@ HTML_PROFESOR = """<!DOCTYPE html>
             } catch(e) {}
         }
 
-        function mostrarToast(nombre, estado, hora, pct, esError = false) {
+        function mostrarToast(nombre, estado, hora, pct, esError = false, esDuplicado = false) {
             const t = document.getElementById('toastConfirm');
-            t.className = `toast-confirm ${esError ? 'toast-error' : ''}`;
-            document.getElementById('toastTitle').textContent = esError ? '✕ Aviso' : `✓ ${estado}`;
+            t.className = `toast-confirm ${esDuplicado ? 'toast-duplicate' : (esError ? 'toast-error' : '')}`;
+            document.getElementById('toastTitle').textContent = esDuplicado ? '⚠ Marcaje duplicado' : (esError ? '✕ Aviso' : `✓ ${estado}`);
             document.getElementById('toastNombre').textContent = nombre;
             document.getElementById('toastMeta').textContent = pct ? `Hora: ${hora} &bull; Asistencia: ${pct}%` : `Hora: ${hora}`;
             t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 4500);
         }
 
         // --- SISTEMA OFFLINE CON DEDUPLICACIÓN ---
@@ -2027,6 +2065,8 @@ HTML_PROFESOR = """<!DOCTYPE html>
             actualizarBarraDocente();
             actualizarOfflineUI();
             cargarCohortes();
+            comprobarConexionProfesor();
+            setInterval(comprobarConexionProfesor, 15000);
         });
     </script>
 </body>
@@ -2063,7 +2103,8 @@ HTML_SCANNER = """<!DOCTYPE html>
             --borde: #E5E7EB;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: var(--bg); color: var(--texto); padding-bottom: 40px; }
+        body { background: var(--bg); color: var(--texto); padding-bottom: 24px; }
+        #pwaBanner, #modalInstalarApp { display: none !important; }
         
         .mobile-page-heading { margin-bottom: 12px; }
         .header-actions { display: flex; align-items: center; gap: 6px; }
@@ -2145,11 +2186,17 @@ HTML_SCANNER = """<!DOCTYPE html>
         .badge-status {
             background: #DEF7EC;
             color: #03543F;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 2px 8px;
+            padding: 2px 6px;
             border-radius: 10px;
         }
+        .badge-status[data-state="checking"], .badge-status[data-state="sending"] {
+            background: #FEF3C7; color: #92400E;
+        }
+        .badge-status[data-state="online"] { background: #DEF7EC; color: #03543F; }
+        .badge-status[data-state="offline"] { background: #FDE8E8; color: #9B1C1C; }
+        .secondary-feed { display: none; }
 
         .btn-tomar-foto {
             display: flex;
@@ -2280,14 +2327,10 @@ HTML_SCANNER = """<!DOCTYPE html>
 </head>
 <body>
 
-    <header style="background-color: transparent; text-align: center; padding: 10px 0;"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Escudo de la U.E.P. Prof. Aristóbulo Istúriz, código PD31212303" style="max-height: 100px; width: auto; display: block; margin: 0 auto;"></header>
+    <header style="background-color: transparent; text-align: center; padding: 8px 0;"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Escudo de la U.E.P. Prof. Aristóbulo Istúriz, código PD31212303" style="max-height: 48px; width: auto; display: block; margin: 0 auto;"></header>
 
     <div class="container">
         <div class="mobile-page-heading">
-            <div class="header-actions">
-                <a href="/profesor" class="btn-switch">👨‍🏫 Cursos</a>
-                <button onclick="instalarPwa()" class="btn-pwa-header">📲 App</button>
-            </div>
             <div class="header-title-row">
                 <div class="header-title">Portería General</div>
                 <span class="clock-badge" id="reloj">--:--:--</span>
@@ -2309,7 +2352,7 @@ HTML_SCANNER = """<!DOCTYPE html>
         </div>
 
         <!-- Notificación de resultado -->
-        <div id="resultado" class="result-box"></div>
+        <div id="resultado" class="result-box" aria-live="polite"></div>
 
         <!-- Banner para cambiar a HTTPS si está en HTTP -->
         <div id="bannerHttps" style="display:none; background:linear-gradient(135deg, #0284C7, #0F172A); color:white; padding:12px 14px; border-radius:12px; margin-bottom:12px; align-items:center; justify-content:space-between; box-shadow:0 4px 12px rgba(2,132,199,0.3);">
@@ -2326,8 +2369,8 @@ HTML_SCANNER = """<!DOCTYPE html>
         <!-- Escáner en Tiempo Real -->
         <div class="card">
             <div class="card-header">
-                <span class="card-title">📷 Registrar asistencia</span>
-                <span class="badge-status" id="estadoServidor">● En Línea</span>
+                <span class="card-title">📷 Escáner de carnet</span>
+                <span class="badge-status" id="estadoServidor" data-state="checking" aria-live="polite">Comprobando conexión…</span>
             </div>
 
             <!-- Visor de cámara en tiempo real -->
@@ -2356,33 +2399,17 @@ HTML_SCANNER = """<!DOCTYPE html>
             </style>
 
             <!-- Botones de Escaneo por Cámara -->
-            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <div style="display: flex; margin-bottom: 10px;">
                 <button type="button" class="btn-tomar-foto" id="btnActivarCamara"
-                    style="flex: 2; margin: 0; background: linear-gradient(135deg, #0369A1, #0F172A); font-size:16px;"
+                    style="flex: 1; margin: 0; background: linear-gradient(135deg, #0369A1, #0F172A); font-size:16px;"
                     onclick="activarCamara()">
                     <span>📷 Iniciar Escáner en Vivo</span>
                 </button>
-                <button type="button" class="btn-tomar-foto" id="btnFotoFallback"
-                    style="flex: 1; margin: 0; background: #64748B; font-size:12px;"
-                    onclick="tomarFotoDirecta()">
-                    <span>📸 Foto</span>
-                </button>
-            </div>
-            <input type="file" id="inputFotoCarnet" accept="image/*" capture="environment" style="display:none" onchange="procesarFotoCarnet(event)">
-
-            <!-- Marcaje Rápido por Teclado o Voz -->
-            <form class="manual-form" onsubmit="event.preventDefault(); enviarMarcaje();" style="margin-top:6px;">
-                <input type="text" id="inputCedula" class="input-cedula" placeholder="O escribe la cédula..." autocomplete="off" inputmode="numeric">
-                <button type="submit" class="btn-marcar">Marcar</button>
-            </form>
-
-            <div class="notice-box" style="margin-top:10px; margin-bottom:0;">
-                💡 Toca <b>Iniciar Escáner en Vivo</b> para leer el código de barras del carnet en tiempo real. El marcaje es automático al detectar el código. Si falla, escribe la cédula manualmente.
             </div>
         </div>
 
         <!-- Historial de Hoy -->
-        <div class="card">
+        <div class="card secondary-feed">
             <div class="card-header">
                 <span class="card-title">📋 Últimos Marcajes de Hoy</span>
                 <span style="font-size: 12px; color: var(--suave);" id="contadorHoy">0 asistencias</span>
@@ -2467,12 +2494,14 @@ HTML_SCANNER = """<!DOCTYPE html>
 
         // Auto-iniciar cámara en vivo al abrir la página
         window.addEventListener('load', function() {
-            actualizarFeed();
+            comprobarEstadoServidor();
+            setInterval(comprobarEstadoServidor, 15000);
             if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
                 const bHttps = document.getElementById('bannerHttps');
                 const btnHttps = document.getElementById('btnIrHttps');
                 if (bHttps && btnHttps) {
                     btnHttps.href = 'https://' + location.hostname + ':8443' + location.pathname;
+                    btnHttps.textContent = btnHttps.href;
                     bHttps.style.display = 'flex';
                 }
             } else {
@@ -2487,6 +2516,24 @@ HTML_SCANNER = """<!DOCTYPE html>
         let frameEscaner = null;
         let ultimoCodigo = null;
         let tsUltimoCodigo = 0;
+        let marcajeEnCurso = false;
+        function establecerEstadoServidor(estado, texto) {
+            const indicador = document.getElementById('estadoServidor');
+            indicador.dataset.state = estado;
+            indicador.textContent = texto;
+        }
+
+        async function comprobarEstadoServidor() {
+            if (marcajeEnCurso) return;
+            try {
+                const respuesta = await fetch('/api/status', {cache: 'no-store'});
+                if (!respuesta.ok) throw new Error('Servidor no disponible');
+                establecerEstadoServidor('online', 'Conectado');
+            } catch (_) {
+                establecerEstadoServidor('offline', 'Sin conexión');
+            }
+        }
+
         const COOLDOWN_MS = 2500;
 
         // Motor BarcodeDetector nativo (Chrome Android 9+)
@@ -2517,7 +2564,7 @@ HTML_SCANNER = """<!DOCTYPE html>
                     <div class="res-nombre">🎥 Cámara en Vivo requiere conexión segura</div>
                     <div class="res-det" style="margin-top:6px; line-height:1.5;">
                         Los celulares requieren HTTPS para transmitir video en tiempo real.<br><br>
-                        <a href="${httpsUrl}" style="display:inline-block; background:#0284C7; color:white; padding:10px 16px; border-radius:10px; font-weight:800; text-decoration:none;">⚡ Toca aquí para abrir con Cámara en Vivo</a><br><br>
+                        <a href="${httpsUrl}" style="display:inline-block; background:#0284C7; color:white; padding:10px 16px; border-radius:10px; font-weight:800; text-decoration:none; overflow-wrap:anywhere;">${httpsUrl}</a><br><br>
                         <small style="opacity:0.85;">(Si tu teléfono muestra <i>"La conexión no es privada"</i>, pulsa en <b>Configuración avanzada</b> → <b>Acceder a... (no seguro)</b>).</small>
                     </div>
                 `;
@@ -2556,7 +2603,7 @@ HTML_SCANNER = """<!DOCTYPE html>
                 // Mostrar error amigable
                 const resBox = document.getElementById('resultado');
                 resBox.className = 'result-box result-warning';
-                resBox.innerHTML = '<div class="res-nombre">📸 Cámara bloqueada</div><div class="res-det">En Chrome: toca los 3 puntos ⋮ → Configuración del sitio → Cámara → Permitir. Luego vuelve a tocar el botón. O usa el botón 📸 Foto para escanear.</div>';
+                resBox.innerHTML = '<div class="res-nombre">Cámara bloqueada</div><div class="res-det">Permite el acceso a la cámara en la configuración del navegador y vuelve a iniciar el escáner.</div>';
                 resBox.style.display = 'block';
             }
         }
@@ -2687,6 +2734,8 @@ HTML_SCANNER = """<!DOCTYPE html>
 
         async function procesarCedula(cedula) {
             const resBox = document.getElementById('resultado');
+            marcajeEnCurso = true;
+            establecerEstadoServidor('sending', 'Enviando…');
             try {
                 const response = await fetch('/api/marcar', {
                     method: 'POST',
@@ -2696,7 +2745,21 @@ HTML_SCANNER = """<!DOCTYPE html>
 
                 const data = await response.json();
 
-                if (data.ok) {
+                establecerEstadoServidor('online', 'Conectado');
+                if (data.duplicado) {
+                    reproducirBeep(false);
+                    resBox.className = 'result-box result-warning';
+                    const titulo = document.createElement('div');
+                    titulo.className = 'res-nombre';
+                    titulo.textContent = '⚠ Marcaje duplicado';
+                    const detalle = document.createElement('div');
+                    detalle.className = 'res-det';
+                    detalle.textContent = data.mensaje || `${data.persona || 'La persona'} ya tiene un marcaje reciente.`;
+                    resBox.replaceChildren(titulo, detalle);
+                    resBox.style.display = 'block';
+                    resBox.scrollIntoView({behavior:'smooth', block:'center'});
+                    if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+                } else if (data.ok) {
                     reproducirBeep(true);
                     let cls = "result-success";
                     if (data.estado === "Retraso") cls = "result-warning";
@@ -2717,7 +2780,6 @@ HTML_SCANNER = """<!DOCTYPE html>
                     resBox.style.display = "block";
                     resBox.scrollIntoView({behavior:'smooth', block:'center'});
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
-                    actualizarFeed();
                 } else {
                     reproducirBeep(false);
                     resBox.className = "result-box result-error";
@@ -2730,6 +2792,7 @@ HTML_SCANNER = """<!DOCTYPE html>
                     if (navigator.vibrate) navigator.vibrate([300]);
                 }
             } catch (err) {
+                establecerEstadoServidor('offline', 'Sin conexión');
                 reproducirBeep(false);
                 resBox.className = "result-box result-error";
                 resBox.innerHTML = `
@@ -2737,6 +2800,8 @@ HTML_SCANNER = """<!DOCTYPE html>
                     <div class="res-det">No se pudo conectar con el servidor principal.</div>
                 `;
                 resBox.style.display = "block";
+            } finally {
+                marcajeEnCurso = false;
             }
         }
 
@@ -2857,8 +2922,6 @@ HTML_SCANNER = """<!DOCTYPE html>
         const lnkHttps = document.getElementById('lnkModoHttps');
         if (lnkHttps) lnkHttps.href = 'https://' + location.hostname + ':8443' + location.pathname;
 
-        actualizarFeed();
-        setInterval(actualizarFeed, 10000);
     </script>
 </body>
 </html>"""
