@@ -391,7 +391,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
     <title>Asista - Portal Móvil del Docente</title>
     <!-- PWA y Soporte Móvil Nativo -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0F2042">
+    <meta name="theme-color" content="#040444">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Asista Docente">
@@ -401,26 +401,33 @@ HTML_PROFESOR = """<!DOCTYPE html>
     <script src="/static/zxing.js"></script>
     <style>
         :root {
-            --primario: #0F2042;
-            --primario-dark: #0A1428;
-            --acento: #00B4D8;
-            --acento-dark: #0096B7;
-            --ok: #10B981;
-            --ok-bg: #ECFDF5;
-            --aviso: #F59E0B;
-            --aviso-bg: #FFFBEB;
-            --rojo: #EF4444;
-            --rojo-bg: #FEF2F2;
-            --bg: #F0F4F8;
-            --card: #FFFFFF;
-            --texto: #0A192F;
-            --suave: #627D98;
-            --borde: #D9E2EC;
+            --primario: #040444;
+            --primario-dark: #08082D;
+            --acento: #56E1E8;
+            --acento-dark: #35C8D1;
+            --ok: #56E1E8;
+            --ok-bg: rgba(86, 225, 232, 0.1);
+            --aviso: #70283D;
+            --aviso-bg: #24151C;
+            --rojo: #70283D;
+            --rojo-bg: #24151C;
+            --bg: #040444;
+            --card: #12131B;
+            --texto: #F3EFE8;
+            --suave: #AAA6A1;
+            --borde: rgba(86, 225, 232, 0.2);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--texto); padding-bottom: 24px; -webkit-tap-highlight-color: transparent; }
         #pwaBanner, #modalInstalarApp { display: none !important; }
 
+        .brand-header { max-width: 520px; margin: 12px auto 8px; padding: 0 12px; }
+        .brand-frame {
+            min-height: 72px; display: grid; place-items: center; padding: 8px;
+            background: linear-gradient(180deg, #12131B, #0C0D18);
+            border: 1px solid var(--borde); border-radius: 16px;
+        }
+        .brand-frame img { display: block; max-height: 52px; width: auto; }
         .mobile-page-heading { margin-bottom: 12px; }
         .header-actions { display: flex; align-items: center; gap: 6px; }
         .btn-switch {
@@ -509,9 +516,9 @@ HTML_PROFESOR = """<!DOCTYPE html>
 
         /* Barra de contingencia offline */
         .offline-bar {
-            background: var(--aviso-bg);
+            background: #21151B;
             border: 1px solid var(--aviso);
-            color: #92400E;
+            color: #E8D9DD;
             padding: 10px 14px;
             border-radius: 12px;
             margin-bottom: 12px;
@@ -534,8 +541,8 @@ HTML_PROFESOR = """<!DOCTYPE html>
 
         /* Banner de Sesión Cerrada */
         .session-status {
-            background: rgba(15, 32, 66, 0.08);
-            border: 1.5px solid var(--primario);
+            background: rgba(86, 225, 232, 0.06);
+            border: 1px solid var(--borde);
             border-radius: 12px;
             padding: 10px 14px;
             margin-bottom: 12px;
@@ -544,12 +551,12 @@ HTML_PROFESOR = """<!DOCTYPE html>
             justify-content: space-between;
             font-size: 12px;
             font-weight: 800;
-            color: var(--primario);
+            color: var(--texto);
         }
         .btn-reabrir {
-            background: #FFFFFF;
-            border: 1px solid var(--primario);
-            color: var(--primario);
+            background: var(--card);
+            border: 1px solid var(--borde);
+            color: var(--acento);
             padding: 4px 10px;
             border-radius: 8px;
             font-size: 11px;
@@ -559,10 +566,10 @@ HTML_PROFESOR = """<!DOCTYPE html>
 
         .card {
             background: var(--card);
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 14px 16px;
             margin-bottom: 12px;
-            box-shadow: 0 4px 14px rgba(15, 32, 66, 0.05);
+            box-shadow: none;
             border: 1px solid var(--borde);
         }
 
@@ -574,8 +581,8 @@ HTML_PROFESOR = """<!DOCTYPE html>
             font-size: 14px;
             font-weight: 700;
             color: var(--texto);
-            background: var(--bg);
-            border: 2px solid var(--borde);
+            background: #1B1A21;
+            border: 1px solid var(--borde);
             border-radius: 12px;
             outline: none;
             margin-top: 6px;
@@ -588,7 +595,7 @@ HTML_PROFESOR = """<!DOCTYPE html>
             align-items: center;
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px dashed var(--borde);
+            border-top: 1px solid var(--borde);
             font-size: 12px;
             color: var(--suave);
         }
@@ -602,12 +609,13 @@ HTML_PROFESOR = """<!DOCTYPE html>
 
         /* TARJETA ESCÁNER DE FOTO Y CÉDULA RÁPIDA */
         .scanner-card {
-            background: linear-gradient(135deg, #0F2042, #162C55);
+            background: #11131B;
             color: white;
-            border-radius: 16px;
-            padding: 16px;
+            border: 1px solid var(--borde);
+            border-radius: 14px;
+            padding: 18px;
             margin-bottom: 12px;
-            box-shadow: 0 6px 18px rgba(15, 32, 66, 0.2);
+            box-shadow: none;
         }
         .scanner-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
         .scanner-badge { background: rgba(0, 180, 216, 0.2); color: #A5F3FC; font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: 800; }
@@ -616,10 +624,10 @@ HTML_PROFESOR = """<!DOCTYPE html>
             font-size: 10px; font-weight: 800; white-space: nowrap;
         }
         .connection-status[data-state="checking"], .connection-status[data-state="sending"] {
-            color: #FDE68A; background: rgba(245, 158, 11, 0.18);
+            color: var(--acento); background: rgba(86, 225, 232, 0.1);
         }
-        .connection-status[data-state="online"] { color: #A7F3D0; background: rgba(16, 185, 129, 0.18); }
-        .connection-status[data-state="offline"] { color: #FECACA; background: rgba(239, 68, 68, 0.2); }
+        .connection-status[data-state="online"] { color: var(--acento); background: rgba(86, 225, 232, 0.1); }
+        .connection-status[data-state="offline"] { color: #E6C7D0; background: rgba(112, 40, 61, 0.36); }
 
         .btn-tomar-foto {
             display: flex;
@@ -627,15 +635,15 @@ HTML_PROFESOR = """<!DOCTYPE html>
             justify-content: center;
             gap: 10px;
             width: 100%;
-            background: linear-gradient(135deg, #10B981, #059669);
-            color: white;
+            background: var(--acento);
+            color: var(--primario);
             padding: 14px;
             border-radius: 12px;
             font-size: 15px;
             font-weight: 800;
             border: none;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+            box-shadow: none;
             margin-bottom: 10px;
             transition: transform 0.1s ease;
         }
@@ -646,15 +654,15 @@ HTML_PROFESOR = """<!DOCTYPE html>
             flex: 1;
             padding: 12px 14px;
             border-radius: 12px;
-            border: 2px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.12);
-            color: white;
+            border: 1px solid var(--borde);
+            background: #1B1A21;
+            color: var(--texto);
             font-size: 14px;
             font-weight: 700;
             outline: none;
         }
-        .input-cedula::placeholder { color: rgba(255,255,255,0.6); }
-        .input-cedula:focus { border-color: var(--acento); background: rgba(255,255,255,0.18); }
+        .input-cedula::placeholder { color: var(--suave); }
+        .input-cedula:focus { border-color: var(--acento); background: #1B1A21; }
         .btn-marcar-submit {
             background: var(--acento);
             color: var(--primario);
@@ -683,26 +691,24 @@ HTML_PROFESOR = """<!DOCTYPE html>
         /* Notificación Toast de Confirmación */
         .toast-confirm {
             background: var(--card);
-            border-left: 5px solid var(--ok);
+            border: 1px solid var(--borde);
+            border-left: 3px solid var(--ok);
             border-radius: 12px;
             padding: 12px 14px;
             margin-bottom: 12px;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
+            box-shadow: none;
             display: none;
             animation: slideDown 0.3s ease;
         }
         .toast-confirm.toast-error {
             border-left-color: var(--rojo);
-            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
         }
         .toast-confirm.toast-duplicate {
             border-left-color: var(--aviso);
-            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        .toast-title { font-size: 13px; font-weight: 800; color: var(--ok); margin-bottom: 2px; }
-        .toast-confirm.toast-error .toast-title { color: var(--rojo); }
-        .toast-confirm.toast-duplicate .toast-title { color: #92400E; }
+        .toast-title { font-size: 13px; font-weight: 800; color: var(--acento); margin-bottom: 2px; }
+        .toast-confirm.toast-error .toast-title, .toast-confirm.toast-duplicate .toast-title { color: #E6C7D0; }
         .toast-desc { font-size: 13px; font-weight: 700; color: var(--texto); }
         .toast-meta { font-size: 11px; color: var(--suave); margin-top: 2px; }
         .attendance-tools { margin: 8px 0 16px; }
@@ -2081,7 +2087,7 @@ HTML_SCANNER = """<!DOCTYPE html>
     <title>Asista - Escáner Móvil de Portería</title>
     <!-- PWA y Soporte Móvil Nativo -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0F2042">
+    <meta name="theme-color" content="#040444">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Asista Portería">
@@ -2091,21 +2097,29 @@ HTML_SCANNER = """<!DOCTYPE html>
     <script src="/static/zxing.js"></script>
     <style>
         :root {
-            --primario: #0F2042;
-            --primario-dark: #0A1428;
-            --acento: #00B4D8;
-            --ok: #10B981;
-            --ok-dark: #059669;
-            --bg: #F4F6F9;
-            --card: #FFFFFF;
-            --texto: #1F2937;
-            --suave: #6B7280;
-            --borde: #E5E7EB;
+            --primario: #040444;
+            --primario-dark: #08082D;
+            --acento: #56E1E8;
+            --ok: #56E1E8;
+            --aviso: #70283D;
+            --aviso-bg: #24151C;
+            --rojo: #70283D;
+            --bg: #040444;
+            --card: #12131B;
+            --texto: #F3EFE8;
+            --suave: #AAA6A1;
+            --borde: rgba(86, 225, 232, 0.2);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--texto); padding-bottom: 24px; }
         #pwaBanner, #modalInstalarApp { display: none !important; }
-        
+        .brand-header { max-width: 500px; margin: 12px auto 8px; padding: 0 12px; }
+        .brand-frame {
+            min-height: 72px; display: grid; place-items: center; padding: 8px;
+            background: linear-gradient(180deg, #12131B, #0C0D18);
+            border: 1px solid var(--borde); border-radius: 16px;
+        }
+        .brand-frame img { display: block; max-height: 52px; width: auto; }
         .mobile-page-heading { margin-bottom: 12px; }
         .header-actions { display: flex; align-items: center; gap: 6px; }
         .btn-switch {
@@ -2134,12 +2148,12 @@ HTML_SCANNER = """<!DOCTYPE html>
         .header-title { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: var(--texto); }
         .clock-badge {
             display: inline-block;
-            background: rgba(0,180,216,0.15);
+            background: rgba(86, 225, 232, 0.1);
             padding: 3px 10px;
             border-radius: 14px;
             font-size: 12px;
             font-weight: 700;
-            color: var(--primario);
+            color: var(--acento);
         }
 
         .container { max-width: 500px; margin: 12px auto; padding: 0 12px; }
@@ -2169,10 +2183,10 @@ HTML_SCANNER = """<!DOCTYPE html>
 
         .card {
             background: var(--card);
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 18px;
             margin-bottom: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: none;
             border: 1px solid var(--borde);
         }
 
@@ -2182,20 +2196,20 @@ HTML_SCANNER = """<!DOCTYPE html>
             align-items: center;
             margin-bottom: 12px;
         }
-        .card-title { font-size: 15px; font-weight: 800; color: var(--primario); }
+        .card-title { font-size: 15px; font-weight: 800; color: var(--texto); }
         .badge-status {
-            background: #DEF7EC;
-            color: #03543F;
+            background: rgba(86, 225, 232, 0.1);
+            color: var(--acento);
             font-size: 10px;
             font-weight: 700;
             padding: 2px 6px;
             border-radius: 10px;
         }
         .badge-status[data-state="checking"], .badge-status[data-state="sending"] {
-            background: #FEF3C7; color: #92400E;
+            background: rgba(86, 225, 232, 0.1); color: var(--acento);
         }
-        .badge-status[data-state="online"] { background: #DEF7EC; color: #03543F; }
-        .badge-status[data-state="offline"] { background: #FDE8E8; color: #9B1C1C; }
+        .badge-status[data-state="online"] { background: rgba(86, 225, 232, 0.1); color: var(--acento); }
+        .badge-status[data-state="offline"] { background: rgba(112, 40, 61, 0.36); color: #E6C7D0; }
         .secondary-feed { display: none; }
 
         .btn-tomar-foto {
@@ -2204,24 +2218,24 @@ HTML_SCANNER = """<!DOCTYPE html>
             justify-content: center;
             gap: 10px;
             width: 100%;
-            background: linear-gradient(135deg, var(--ok), var(--ok-dark));
-            color: white;
+            background: var(--acento);
+            color: var(--primario);
             padding: 16px 20px;
             border-radius: 14px;
             font-size: 16px;
             font-weight: 800;
             border: none;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+            box-shadow: none;
             margin-bottom: 12px;
             transition: transform 0.1s ease;
         }
         .btn-tomar-foto:active { transform: scale(0.98); }
 
         .notice-box {
-            background: #EFF6FF;
-            border: 1px solid #BFDBFE;
-            color: #1E40AF;
+            background: var(--card);
+            border: 1px solid var(--borde);
+            color: var(--suave);
             padding: 10px 12px;
             border-radius: 10px;
             font-size: 12px;
@@ -2234,7 +2248,7 @@ HTML_SCANNER = """<!DOCTYPE html>
         .input-cedula {
             flex: 1;
             padding: 12px 14px;
-            border: 2px solid var(--borde);
+            border: 1px solid var(--borde);
             border-radius: 12px;
             font-size: 15px;
             font-weight: 700;
@@ -2243,8 +2257,8 @@ HTML_SCANNER = """<!DOCTYPE html>
         }
         .input-cedula:focus { border-color: var(--acento); }
         .btn-marcar {
-            background: var(--primario);
-            color: white;
+            background: var(--acento);
+            color: var(--primario);
             border: none;
             padding: 0 18px;
             border-radius: 12px;
@@ -2260,8 +2274,8 @@ HTML_SCANNER = """<!DOCTYPE html>
             padding: 0 10px;
             border: 1px solid var(--borde);
             border-radius: 12px;
-            background: var(--bg);
-            color: var(--primario);
+            background: var(--card);
+            color: var(--acento);
             font-size: 19px;
             cursor: pointer;
         }
@@ -2269,15 +2283,15 @@ HTML_SCANNER = """<!DOCTYPE html>
         /* Notificación de resultado */
         .result-box {
             padding: 14px 16px;
-            border-radius: 14px;
+            border-radius: 12px;
+            border: 1px solid var(--borde);
             margin-bottom: 14px;
             display: none;
             animation: slideDown 0.3s ease;
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        .result-success { background: #DEF7EC; border: 2px solid var(--ok); color: #03543F; }
-        .result-warning { background: #FEF3C7; border: 2px solid #F59E0B; color: #92400E; }
-        .result-error { background: #FDE8E8; border: 2px solid #E02424; color: #9B1C1C; }
+        .result-success { background: rgba(86, 225, 232, 0.08); border: 1px solid var(--borde); color: var(--texto); }
+        .result-warning, .result-error { background: var(--aviso-bg); border: 1px solid var(--aviso); color: #E8D9DD; }
         .res-nombre { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
         .res-det { font-size: 13px; font-weight: 600; }
 
@@ -2298,15 +2312,15 @@ HTML_SCANNER = """<!DOCTYPE html>
             padding: 4px 10px;
             border-radius: 10px;
         }
-        .badge-presente { background: #DEF7EC; color: #03543F; }
-        .badge-retraso { background: #FEF3C7; color: #92400E; }
-        .badge-salida { background: #E1EFFE; color: #1E429F; }
+        .badge-presente { background: rgba(86, 225, 232, 0.1); color: var(--acento); }
+        .badge-retraso { background: rgba(112, 40, 61, 0.36); color: #E6C7D0; }
+        .badge-salida { background: rgba(86, 225, 232, 0.1); color: var(--acento); }
 
         /* Modales */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 20, 40, 0.7);
+            background: rgba(4, 4, 68, 0.9);
             display: none;
             align-items: center;
             justify-content: center;
@@ -2314,12 +2328,13 @@ HTML_SCANNER = """<!DOCTYPE html>
             z-index: 9999;
         }
         .modal-content {
-            background: white;
-            border-radius: 20px;
+            background: var(--card);
+            border: 1px solid var(--borde);
+            border-radius: 14px;
             padding: 22px;
             width: 100%;
             max-width: 440px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: none;
         }
         .modal-title { font-size: 17px; font-weight: 800; color: var(--primario); margin-bottom: 6px; }
         .modal-desc { font-size: 12px; color: var(--suave); margin-bottom: 14px; }
@@ -2327,7 +2342,7 @@ HTML_SCANNER = """<!DOCTYPE html>
 </head>
 <body>
 
-    <header style="background-color: transparent; text-align: center; padding: 8px 0;"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Escudo de la U.E.P. Prof. Aristóbulo Istúriz, código PD31212303" style="max-height: 48px; width: auto; display: block; margin: 0 auto;"></header>
+    <header class="brand-header"><div class="brand-frame"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Escudo de la U.E.P. Prof. Aristóbulo Istúriz, código PD31212303"></div></header>
 
     <div class="container">
         <div class="mobile-page-heading">
@@ -2351,11 +2366,8 @@ HTML_SCANNER = """<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- Notificación de resultado -->
-        <div id="resultado" class="result-box" aria-live="polite"></div>
-
         <!-- Banner para cambiar a HTTPS si está en HTTP -->
-        <div id="bannerHttps" style="display:none; background:linear-gradient(135deg, #0284C7, #0F172A); color:white; padding:12px 14px; border-radius:12px; margin-bottom:12px; align-items:center; justify-content:space-between; box-shadow:0 4px 12px rgba(2,132,199,0.3);">
+        <div id="bannerHttps" style="display:none; background:var(--card); color:var(--texto); padding:12px 14px; border:1px solid var(--borde); border-radius:12px; margin-bottom:12px; align-items:center; justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:22px;">🎥</span>
                 <div style="font-size:12px; line-height:1.3;">
@@ -2363,7 +2375,7 @@ HTML_SCANNER = """<!DOCTYPE html>
                     <span style="font-size:11px; opacity:0.9;">Activa el video en vivo en tu teléfono</span>
                 </div>
             </div>
-            <a id="btnIrHttps" href="#" style="background:#00B4D8; color:#0F2042; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:800; text-decoration:none; white-space:nowrap;">Activar En Vivo</a>
+            <a id="btnIrHttps" href="#" style="background:var(--acento); color:var(--primario); padding:8px 12px; border-radius:8px; font-size:11px; font-weight:800; text-decoration:none; white-space:nowrap;">Activar En Vivo</a>
         </div>
 
         <!-- Escáner en Tiempo Real -->
@@ -2374,19 +2386,19 @@ HTML_SCANNER = """<!DOCTYPE html>
             </div>
 
             <!-- Visor de cámara en tiempo real -->
-            <div id="visorCamara" style="display:none; position:relative; border-radius:14px; overflow:hidden; background:#000; margin-bottom:12px;">
+            <div id="visorCamara" style="display:none; position:relative; border-radius:14px; overflow:hidden; background:#08082D; margin-bottom:12px;">
                 <video id="videoEscaner" autoplay playsinline muted
                     style="width:100%; display:block; border-radius:14px; max-height:260px; object-fit:cover;"></video>
                 <!-- Marco guía de escaneo -->
                 <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-54%);
-                    width:72%; height:38%; border:3px solid #00B4D8;
+                    width:72%; height:38%; border:2px solid var(--acento);
                     border-radius:10px; box-shadow:0 0 0 9999px rgba(0,0,0,0.45);
                     pointer-events:none;">
-                    <div style="position:absolute; top:-2px; left:-2px; width:22px; height:22px; border-top:4px solid #00B4D8; border-left:4px solid #00B4D8; border-radius:4px 0 0 0;"></div>
-                    <div style="position:absolute; top:-2px; right:-2px; width:22px; height:22px; border-top:4px solid #00B4D8; border-right:4px solid #00B4D8; border-radius:0 4px 0 0;"></div>
-                    <div style="position:absolute; bottom:-2px; left:-2px; width:22px; height:22px; border-bottom:4px solid #00B4D8; border-left:4px solid #00B4D8; border-radius:0 0 0 4px;"></div>
-                    <div style="position:absolute; bottom:-2px; right:-2px; width:22px; height:22px; border-bottom:4px solid #00B4D8; border-right:4px solid #00B4D8; border-radius:0 0 4px 0;"></div>
-                    <div id="lineaEscaneo" style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,#00B4D8,transparent); animation:scanLine 1.8s ease-in-out infinite;"></div>
+                    <div style="position:absolute; top:-2px; left:-2px; width:22px; height:22px; border-top:3px solid var(--acento); border-left:3px solid var(--acento); border-radius:4px 0 0 0;"></div>
+                    <div style="position:absolute; top:-2px; right:-2px; width:22px; height:22px; border-top:3px solid var(--acento); border-right:3px solid var(--acento); border-radius:0 4px 0 0;"></div>
+                    <div style="position:absolute; bottom:-2px; left:-2px; width:22px; height:22px; border-bottom:3px solid var(--acento); border-left:3px solid var(--acento); border-radius:0 0 0 4px;"></div>
+                    <div style="position:absolute; bottom:-2px; right:-2px; width:22px; height:22px; border-bottom:3px solid var(--acento); border-right:3px solid var(--acento); border-radius:0 0 4px 0;"></div>
+                    <div id="lineaEscaneo" style="position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--acento),transparent); animation:scanLine 1.8s ease-in-out infinite;"></div>
                 </div>
                 <div id="estadoCamara" style="position:absolute; bottom:8px; left:0; right:0; text-align:center; color:white; font-size:12px; font-weight:700; text-shadow:0 1px 3px rgba(0,0,0,0.8);">
                     Apunte al código de barras del carnet
@@ -2395,17 +2407,20 @@ HTML_SCANNER = """<!DOCTYPE html>
             </div>
 
             <style>
-                @keyframes scanLine { 0%{top:0} 50%{top:calc(100% - 3px)} 100%{top:0} }
+                @keyframes scanLine { 0%{top:0} 50%{top:calc(100% - 2px)} 100%{top:0} }
             </style>
 
             <!-- Botones de Escaneo por Cámara -->
-            <div style="display: flex; margin-bottom: 10px;">
+            <div style="display: flex;">
                 <button type="button" class="btn-tomar-foto" id="btnActivarCamara"
-                    style="flex: 1; margin: 0; background: linear-gradient(135deg, #0369A1, #0F172A); font-size:16px;"
+                    style="flex: 1; margin: 0; font-size:16px;"
                     onclick="activarCamara()">
                     <span>📷 Iniciar Escáner en Vivo</span>
                 </button>
             </div>
+
+            <!-- Confirmación persistente del último marcaje, bajo el visor -->
+            <div id="resultado" class="result-box" aria-live="polite"></div>
         </div>
 
         <!-- Historial de Hoy -->
@@ -2528,7 +2543,7 @@ HTML_SCANNER = """<!DOCTYPE html>
             try {
                 const respuesta = await fetch('/api/status', {cache: 'no-store'});
                 if (!respuesta.ok) throw new Error('Servidor no disponible');
-                establecerEstadoServidor('online', 'Conectado');
+                establecerEstadoServidor('online', 'En línea');
             } catch (_) {
                 establecerEstadoServidor('offline', 'Sin conexión');
             }
@@ -2564,7 +2579,7 @@ HTML_SCANNER = """<!DOCTYPE html>
                     <div class="res-nombre">🎥 Cámara en Vivo requiere conexión segura</div>
                     <div class="res-det" style="margin-top:6px; line-height:1.5;">
                         Los celulares requieren HTTPS para transmitir video en tiempo real.<br><br>
-                        <a href="${httpsUrl}" style="display:inline-block; background:#0284C7; color:white; padding:10px 16px; border-radius:10px; font-weight:800; text-decoration:none; overflow-wrap:anywhere;">${httpsUrl}</a><br><br>
+                        <a href="${httpsUrl}" style="display:inline-block; background:var(--acento); color:var(--primario); padding:10px 16px; border-radius:10px; font-weight:800; text-decoration:none; overflow-wrap:anywhere;">${httpsUrl}</a><br><br>
                         <small style="opacity:0.85;">(Si tu teléfono muestra <i>"La conexión no es privada"</i>, pulsa en <b>Configuración avanzada</b> → <b>Acceder a... (no seguro)</b>).</small>
                     </div>
                 `;
@@ -2590,7 +2605,7 @@ HTML_SCANNER = """<!DOCTYPE html>
                 await video.play();
                 visor.style.display = 'block';
                 btn.style.display = 'none';
-                document.getElementById('estadoCamara').textContent = '🎯 Apunta el código de barras del carnet al recuadro azul';
+                document.getElementById('estadoCamara').textContent = 'Apunta el código de barras del carnet al marco cian';
                 iniciarLecturaCamara(video);
             } catch (err) {
                 if (streamCamara) {
@@ -2745,7 +2760,7 @@ HTML_SCANNER = """<!DOCTYPE html>
 
                 const data = await response.json();
 
-                establecerEstadoServidor('online', 'Conectado');
+                establecerEstadoServidor('online', 'En línea');
                 if (data.duplicado) {
                     reproducirBeep(false);
                     resBox.className = 'result-box result-warning';
@@ -3191,7 +3206,7 @@ self.addEventListener('fetch', (e) => {
                 "start_url": "/profesor",
                 "display": "standalone",
                 "background_color": "#0A1428",
-                "theme_color": "#0F2042",
+                "theme_color": "#040444",
                 "orientation": "portrait-primary",
                 "icons": [
                     {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},

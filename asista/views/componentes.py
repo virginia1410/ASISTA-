@@ -9,10 +9,10 @@ from PIL import Image, ImageTk
 
 from config import MESES
 from tema import (
-    ACENTO, BORDE, BG, CARD, F_TEXTO, F_TITULO, OK, PRIMARIO, PRIMARIO_H,
+    ACENTO, ACENTO_H, BLANCO, BORDE, BG, CARD, F_TEXTO, F_TITULO, PRIMARIO, PRIMARIO_H,
     SUAVE, TEXTO, banner_imagen, logo_check, logo_institucion
 )
-from .ui_utils import boton, campo, tarjeta, etiqueta, segmentado, combo
+from .ui_utils import boton, campo, tarjeta, etiqueta, combo
 
 
 class Banner(tk.Canvas):
@@ -52,13 +52,13 @@ class Banner(tk.Canvas):
         self.create_image(0, 0, image=self.foto, anchor="nw")
         k, t, s = self.textos
         acento_col = ACENTO[0] if isinstance(ACENTO, tuple) else ACENTO
-        self.create_text(38, 32, text=k, anchor="w", fill="#A5F3FC", font=(F_TEXTO, 10, "bold"))
+        self.create_text(38, 32, text=k, anchor="w", fill=ACENTO[0], font=(F_TEXTO, 10, "bold"))
         self.create_rectangle(38, 46, 86, 49, fill=acento_col, width=0)
-        self.create_text(38, 82, text=t, anchor="w", fill="white", font=(F_TITULO, 27, "bold"))
-        self.create_text(38, 116, text=s, anchor="w", fill="#E0F2FE", font=(F_TEXTO, 12))
+        self.create_text(38, 82, text=t, anchor="w", fill=BLANCO, font=(F_TITULO, 27, "bold"))
+        self.create_text(38, 116, text=s, anchor="w", fill="#C5C0BA", font=(F_TEXTO, 12))
         if self.escudo_tk:
             x = max(0, w - 112)
-            self.create_rectangle(x, 14, w - 16, 126, fill="white", outline="#D9E2EC", width=1)
+            self.create_rectangle(x, 14, w - 16, 126, fill=BLANCO, outline=acento_col, width=1)
             self.create_image((x + w - 16) // 2, 70, image=self.escudo_tk)
 
 
@@ -226,95 +226,91 @@ def asociar_boton_calendario(parent, entry, callback=None):
 
 
 class DialogoQRMovil(ctk.CTkToplevel):
-    """Ventana modal del portal móvil con soporte de código QR dinámico y Escáner en tiempo real."""
+    """Ventana de acceso QR a la estación móvil de escaneo."""
 
-    def __init__(self, master, puerto=8080):
+    def __init__(self, master):
         super().__init__(master, fg_color=BG[0] if isinstance(BG, tuple) else BG)
-        self.title("Asista · Portal Móvil para Celular")
-        self.geometry("490x750")
+        self.title("Asista · Estación Móvil de Escaneo")
+        self.geometry("470x690")
         self.resizable(False, False)
         self.transient(master.winfo_toplevel())
         self.after(150, self.grab_set)
 
         try:
-            from servicio_asista import obtener_ip_local, listar_ips_locales
+            from servicio_asista import listar_ips_locales
             self.ips = listar_ips_locales()
             self.ip = self.ips[0]
         except Exception:
             self.ips = ["127.0.0.1"]
             self.ip = "127.0.0.1"
-        self.puerto = puerto
 
         color_prim = PRIMARIO[0] if isinstance(PRIMARIO, tuple) else PRIMARIO
-        color_prim_h = PRIMARIO_H[0] if isinstance(PRIMARIO_H, tuple) else PRIMARIO_H
+        color_acento = ACENTO[0] if isinstance(ACENTO, tuple) else ACENTO
+        color_acento_h = ACENTO_H[0] if isinstance(ACENTO_H, tuple) else ACENTO_H
         color_card = CARD[0] if isinstance(CARD, tuple) else CARD
         color_borde = BORDE[0] if isinstance(BORDE, tuple) else BORDE
         color_texto = TEXTO[0] if isinstance(TEXTO, tuple) else TEXTO
 
+        cabecera = ctk.CTkFrame(
+            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=14
+        )
+        cabecera.pack(fill="x", padx=24, pady=(18, 12))
+
+        escudo = logo_institucion(alto=54, ancho_max=54)
+        if escudo:
+            self._logo_tk = ctk.CTkImage(light_image=escudo, size=escudo.size)
+            ctk.CTkLabel(cabecera, text="", image=self._logo_tk).pack(side="left", padx=(12, 10), pady=8)
+
+        marca = ctk.CTkFrame(cabecera, fg_color="transparent")
+        marca.pack(side="left", fill="x", expand=True, pady=10)
         ctk.CTkLabel(
-            self, text="📱 Portal Móvil para Celular", font=(F_TITULO, 22, "bold"), text_color=color_texto
-        ).pack(pady=(14, 2))
+            marca, text="ASISTA", font=(F_TITULO, 19, "bold"), text_color=color_texto, anchor="w"
+        ).pack(fill="x")
+        ctk.CTkLabel(
+            marca, text="ESTACIÓN MÓVIL DE ESCANEO", font=(F_TEXTO, 10, "bold"),
+            text_color=color_acento, anchor="w"
+        ).pack(fill="x", pady=(2, 0))
 
         ctk.CTkLabel(
-            self,
-            text="Escanea el código QR con tu celular para abrir el portal\ny activar el escaneo de carnets en tiempo real.",
+            self, text="Escanea el QR con el teléfono para abrir la cámara en vivo.",
             font=(F_TEXTO, 11), text_color=SUAVE, justify="center"
-        ).pack(pady=(0, 6), padx=20)
+        ).pack(pady=(0, 8), padx=20)
 
         # Selector de Red / IP si hay varias
         if len(self.ips) > 1:
             f_ip = ctk.CTkFrame(self, fg_color="transparent")
-            f_ip.pack(fill="x", padx=30, pady=(0, 6))
-            ctk.CTkLabel(f_ip, text="Red / IP:", font=(F_TEXTO, 11, "bold"), text_color=color_texto).pack(side="left", padx=(0, 6))
-            self.cb_ip = combo(f_ip, values=self.ips, command=self._cambiar_ip, width=170, height=28)
+            f_ip.pack(fill="x", padx=32, pady=(0, 8))
+            ctk.CTkLabel(
+                f_ip, text="IP de red", font=(F_TEXTO, 11, "bold"), text_color=color_texto
+            ).pack(side="left", padx=(0, 10))
+            self.cb_ip = combo(f_ip, values=self.ips, command=self._cambiar_ip, width=230, height=32)
             self.cb_ip.set(self.ip)
             self.cb_ip.pack(side="left")
 
-        # Selector de Modo: Docentes vs Portería
-        self.seg_modo = segmentado(
-            self,
-            values=["👨‍🏫 Portal Docente (Cursos)", "🏛️ Portería General"],
-            command=self._cambiar_modo,
-            height=32,
-            font=(F_TEXTO, 11, "bold")
+        self.f_qr = ctk.CTkFrame(
+            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=18
         )
-        self.seg_modo.pack(fill="x", padx=30, pady=(0, 6))
-        self.seg_modo.set("👨‍🏫 Portal Docente (Cursos)")
-
-        # Selector de Protocolo: HTTPS (Cámara en Vivo) vs HTTP (Directo)
-        self.seg_proto = segmentado(
-            self,
-            values=["📷 Cámara en Vivo (HTTPS :8443)", "🌐 Acceso Directo (HTTP :8080)"],
-            command=self._cambiar_modo,
-            height=32,
-            font=(F_TEXTO, 11, "bold")
-        )
-        self.seg_proto.pack(fill="x", padx=30, pady=(0, 8))
-        self.seg_proto.set("📷 Cámara en Vivo (HTTPS :8443)")
-
-        # Contenedor del QR
-        self.f_qr = ctk.CTkFrame(self, fg_color="transparent")
-        self.f_qr.pack(pady=(0, 6))
+        self.f_qr.pack(pady=(0, 10), padx=24)
 
         self.lbl_qr = ctk.CTkLabel(self.f_qr, text="")
         self.lbl_qr.pack()
 
-        # Enlace completo para verificar protocolo, IP y puerto del QR
-        f_url = ctk.CTkFrame(self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=10)
-        f_url.pack(fill="x", padx=30, pady=(0, 8))
+        f_url = ctk.CTkFrame(
+            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=12
+        )
+        f_url.pack(fill="x", padx=24, pady=(0, 8))
         ctk.CTkLabel(
-            f_url, text="Enlace del portal · protocolo, IP y puerto",
+            f_url, text="URL segura · HTTPS · puerto 8443",
             font=(F_TEXTO, 10, "bold"), text_color=color_texto
         ).pack(pady=(6, 0))
         self.lbl_url = ctk.CTkLabel(
-            f_url, text="", font=(F_TEXTO, 12, "bold"), text_color=color_prim,
+            f_url, text="", font=(F_TEXTO, 12, "bold"), text_color=color_acento,
             wraplength=400, justify="center"
         )
         self.lbl_url.pack(padx=8, pady=(2, 6))
 
-        # Copiar el mismo enlace codificado en el QR
         btn_box = ctk.CTkFrame(self, fg_color="transparent")
-        btn_box.pack(fill="x", padx=30, pady=(0, 6))
+        btn_box.pack(fill="x", padx=24, pady=(0, 8))
 
         def _copiar():
             self.clipboard_clear()
@@ -323,44 +319,31 @@ class DialogoQRMovil(ctk.CTkToplevel):
             self.after(2000, lambda: self.btn_copiar.configure(text="Copiar Enlace"))
 
         self.btn_copiar = ctk.CTkButton(
-            btn_box, text="Copiar Enlace", command=_copiar,
-            fg_color=color_prim, hover_color=color_prim_h, text_color="white",
-            height=34, corner_radius=10, font=(F_TEXTO, 11, "bold")
+            btn_box, text="Copiar URL", command=_copiar,
+            fg_color=color_acento, hover_color=color_acento_h, text_color=color_prim,
+            height=36, corner_radius=10, font=(F_TEXTO, 11, "bold")
         )
         self.btn_copiar.pack(fill="x")
 
-        # Aviso de uso para cámara en vivo
-        self.f_aviso = ctk.CTkFrame(self, fg_color="#F0F9FF", border_width=1, border_color="#BAE6FD", corner_radius=8)
-        self.f_aviso.pack(fill="x", padx=25, pady=(0, 8))
+        self.f_aviso = ctk.CTkFrame(
+            self, fg_color=color_card, border_width=1, border_color=color_borde, corner_radius=10
+        )
+        self.f_aviso.pack(fill="x", padx=24, pady=(0, 12))
         self.lbl_aviso = ctk.CTkLabel(
             self.f_aviso,
-            text="⚡ Escaneo en Tiempo Real en Celular:\nAl abrir en el celular, si dice 'La conexión no es privada',\npulsa en 'Configuración avanzada' y luego 'Acceder a... (no seguro)'.\n¡Esto activa la cámara nativa en vivo y el escaneo automático!",
-            font=(F_TEXTO, 10), text_color="#0369A1", justify="center"
+            text="Cámara en vivo por HTTPS · puerto 8443\nSi el navegador advierte sobre el certificado local, confirma el acceso seguro para continuar.",
+            font=(F_TEXTO, 10), text_color=SUAVE, justify="center"
         )
-        self.lbl_aviso.pack(padx=10, pady=6)
+        self.lbl_aviso.pack(padx=12, pady=8)
 
-        self._cambiar_modo()
+        self._actualizar_qr()
 
     def _cambiar_ip(self, nueva_ip):
         self.ip = nueva_ip
-        self._cambiar_modo()
+        self._actualizar_qr()
 
-    def _cambiar_modo(self, _v=None):
-        modo = self.seg_modo.get()
-        proto = self.seg_proto.get()
-        ruta = "/profesor" if "Docente" in modo else "/"
-
-        if "HTTPS" in proto:
-            self.url_actual = f"https://{self.ip}:8443{ruta}"
-            self.lbl_aviso.configure(
-                text="⚡ Escaneo en Tiempo Real en Celular:\nAl abrir en el celular, si dice 'La conexión no es privada',\npulsa en 'Configuración avanzada' y luego 'Acceder a... (no seguro)'.\n¡Esto activa la cámara nativa en vivo y el escaneo automático!"
-            )
-        else:
-            self.url_actual = f"http://{self.ip}:{self.puerto}{ruta}"
-            self.lbl_aviso.configure(
-                text="🌐 Modo Directo HTTP:\nCarga inmediata sin certificados.\nPara activar la cámara de video en vivo se recomienda el modo HTTPS arriba."
-            )
-
+    def _actualizar_qr(self):
+        self.url_actual = f"https://{self.ip}:8443/"
         self.lbl_url.configure(text=self.url_actual)
 
         # Regenerar QR

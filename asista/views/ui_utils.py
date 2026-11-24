@@ -7,7 +7,7 @@ import customtkinter as ctk
 import sqlite3
 
 from tema import (
-    ACENTO, ACENTO_H, AVISO, BG, BORDE, CARD, ESTADO_COLOR,
+    ACENTO, ACENTO_H, AVISO, BG, BORDE, BURDEOS, CARD, ESTADO_COLOR,
     F_TEXTO, F_TITULO, LEMA, MORADO, MORADO_OSC, NOMBRE_SISTEMA,
     OK, OK_H, PRIMARIO, PRIMARIO_H, SUAVE, SUAVE_BG, TEXTO
 )
@@ -37,8 +37,7 @@ TABLAS = []
 
 def estilo_tablas():
     """Configura el tema y estilo de las tablas ttk según el modo de apariencia."""
-    oscuro = ctk.get_appearance_mode() == "Dark"
-    bg, fg, zebra = ("#0F2042", "#F0F4F8", "#162C55") if oscuro else ("#FFFFFF", "#0A192F", "#F1F5F9")
+    bg, fg, zebra = CARD[0], TEXTO[0], SUAVE_BG[0]
     s = ttk.Style()
     s.theme_use("clam")
     s.configure(
@@ -52,17 +51,16 @@ def estilo_tablas():
     )
     s.configure(
         "Treeview.Heading",
-        background=MORADO,
-        foreground="white",
+        background=CARD[0],
+        foreground=ACENTO[0],
         font=(F_TEXTO, 11, "bold"),
         relief="flat",
         padding=(8, 10)
     )
-    # Fila seleccionada en Turquesa con texto Marino para contraste supremo
     s.map(
         "Treeview",
-        background=[("selected", "#00B4D8")],
-        foreground=[("selected", "#0A192F")]
+        background=[("selected", ACENTO[0])],
+        foreground=[("selected", PRIMARIO[0])]
     )
     s.map("Treeview.Heading", background=[("active", MORADO_OSC)])
     vivas = []
@@ -79,34 +77,32 @@ def estilo_tablas():
 # ==============================================================================
 # PALETA DE BOTONES DE ALTO CONTRASTE (Modo Claro & Modo Oscuro)
 # ==============================================================================
-# Turquesa institucional vibrante (Acción principal / Acento)
-COLOR_TURQUESA = ("#00B4D8", "#00B4D8")
-COLOR_TURQUESA_H = ("#0096B7", "#06B6D4")
-COLOR_TURQUESA_TXT = ("#0A192F", "#0A192F")
+# Cian mate (Acción principal / Acento)
+COLOR_TURQUESA = ACENTO
+COLOR_TURQUESA_H = ACENTO_H
+COLOR_TURQUESA_TXT = PRIMARIO
 
-# Blanco luminoso con borde nítido (Acciones secundarias y herramientas)
-COLOR_BLANCO = ("#FFFFFF", "#FFFFFF")
-COLOR_BLANCO_H = ("#F1F5F9", "#E2E8F0")
-COLOR_BLANCO_TXT = ("#0A192F", "#0A192F")
-COLOR_BLANCO_BORDE = ("#CBD5E1", "#00B4D8")
+# Superficie mate (Acciones secundarias y herramientas)
+COLOR_BLANCO = CARD
+COLOR_BLANCO_H = SUAVE_BG
+COLOR_BLANCO_TXT = TEXTO
+COLOR_BLANCO_BORDE = BORDE
 
-# Primario Institucional
-# Modo Claro: Navy Blue con texto blanco
-# Modo Oscuro: Turquesa vibrante con texto Navy para máxima visibilidad en fondos oscuros
-COLOR_PRIMARIO_BTN = ("#0F2042", "#00B4D8")
-COLOR_PRIMARIO_BTN_H = ("#1A3668", "#06B6D4")
-COLOR_PRIMARIO_BTN_TXT = ("#FFFFFF", "#0A192F")
+# Acción principal
+COLOR_PRIMARIO_BTN = ACENTO
+COLOR_PRIMARIO_BTN_H = ACENTO_H
+COLOR_PRIMARIO_BTN_TXT = PRIMARIO
 
 # Peligro / Baja / Archivo
-COLOR_PELIGRO_BTN = ("#FFFFFF", "#FFFFFF")
-COLOR_PELIGRO_BTN_H = ("#FEE2E2", "#FEE2E2")
-COLOR_PELIGRO_BTN_TXT = ("#DC2626", "#DC2626")
-COLOR_PELIGRO_BORDE = ("#FCA5A5", "#EF4444")
+COLOR_PELIGRO_BTN = AVISO
+COLOR_PELIGRO_BTN_H = (BURDEOS, BURDEOS)
+COLOR_PELIGRO_BTN_TXT = TEXTO
+COLOR_PELIGRO_BORDE = (BURDEOS, BURDEOS)
 
 # Éxito / Confirmación
-COLOR_OK_BTN = ("#10B981", "#10B981")
-COLOR_OK_BTN_H = ("#059669", "#34D399")
-COLOR_OK_BTN_TXT = ("#FFFFFF", "#0A192F")
+COLOR_OK_BTN = OK
+COLOR_OK_BTN_H = OK_H
+COLOR_OK_BTN_TXT = PRIMARIO
 
 ESTILOS_BOTON = {
     "acento": (COLOR_TURQUESA, COLOR_TURQUESA_H, COLOR_TURQUESA_TXT, None, 0),
@@ -198,12 +194,12 @@ def segmentado(parent, **kw):
     fnt = kw.pop("font", (F_TEXTO, 11, "bold"))
     return ctk.CTkSegmentedButton(
         parent,
-        fg_color=("#E2E8F0", "#162C55"),
-        unselected_color=("#E2E8F0", "#162C55"),
-        unselected_hover_color=("#CBD5E1", "#1E3A6D"),
-        selected_color=("#00B4D8", "#00B4D8"),
-        selected_hover_color=("#0096B7", "#06B6D4"),
-        text_color=("#0F2042", "#0F2042"),
+        fg_color=SUAVE_BG,
+        unselected_color=SUAVE_BG,
+        unselected_hover_color=BORDE,
+        selected_color=ACENTO,
+        selected_hover_color=ACENTO_H,
+        text_color=TEXTO,
         font=fnt,
         corner_radius=14,
         **kw
@@ -238,8 +234,13 @@ def crear_tabla(parent, columnas, altura=10):
     sb_y.grid(row=0, column=1, sticky="ns")
     sb_x.grid(row=1, column=0, sticky="ew")
 
-    for tag, color in {"Presente": "#12A97A", "Retraso": "#E8890C", "Salida Temprana": "#E8890C",
-                       "Ausente": "#FF3B00", "pendiente": "#E8890C"}.items():
+    for tag, color in {
+        "Presente": ACENTO[0],
+        "Retraso": BURDEOS,
+        "Salida Temprana": BURDEOS,
+        "Ausente": BURDEOS,
+        "pendiente": SUAVE[0],
+    }.items():
         tree.tag_configure(tag, foreground=color)
     TABLAS.append(tree)
     estilo_tablas()

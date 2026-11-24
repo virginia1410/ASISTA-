@@ -20,7 +20,7 @@ except ImportError:
 import config
 from db import resolver_turno_persona
 from tema import (
-    BG, BORDE, CARD, F_TEXTO, F_TITULO, OK, PRIMARIO, PRIMARIO_H, ACENTO, ACENTO_H, AVISO, SUAVE, TEXTO, logo_check
+    BG, BORDE, CARD, F_TEXTO, F_TITULO, PRIMARIO, PRIMARIO_H, ACENTO, ACENTO_H, AVISO, SUAVE, TEXTO, logo_check
 )
 from .componentes import DialogoQRMovil
 
@@ -152,20 +152,29 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
 
     def _crear_interfaz(self):
         # 1. Cabecera Superior
-        header = ctk.CTkFrame(self, fg_color=PRIMARIO[0], corner_radius=0, height=80)
+        header = ctk.CTkFrame(
+            self, fg_color=PRIMARIO[0], corner_radius=0, height=80,
+            border_width=1, border_color=BORDE[0]
+        )
         header.pack(fill="x")
         header.pack_propagate(False)
 
         h_left = ctk.CTkFrame(header, fg_color="transparent")
         h_left.pack(side="left", padx=24)
 
-        img_logo = logo_check("#FFFFFF", 32)
+        logo_marco = ctk.CTkFrame(
+            h_left, fg_color="transparent", border_width=1, border_color=ACENTO[0],
+            corner_radius=10, width=48, height=48
+        )
+        logo_marco.pack(side="left", padx=(0, 10))
+        logo_marco.pack_propagate(False)
+        img_logo = logo_check("#FFFFFF", 30)
         self.img_tk = ctk.CTkImage(light_image=img_logo, size=img_logo.size)
-        ctk.CTkLabel(h_left, text="", image=self.img_tk).pack(side="left", padx=(0, 10))
+        ctk.CTkLabel(logo_marco, text="", image=self.img_tk).pack(expand=True)
 
         lbl_tit = ctk.CTkLabel(
             h_left, text="Asista · Terminal de Marcaje Escolar",
-            font=(F_TITULO, 20, "bold"), text_color="white"
+            font=(F_TITULO, 20, "bold"), text_color=TEXTO[0]
         )
         lbl_tit.pack(side="left")
 
@@ -175,7 +184,9 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
         # Botón Encender / Apagar Cámara
         self.btn_toggle_cam = ctk.CTkButton(
             h_right, text="📷 Apagar Cámara", command=self._toggle_camara,
-            fg_color="#374151", hover_color="#1F2937", height=36, corner_radius=10, font=(F_TEXTO, 12, "bold")
+            fg_color=CARD[0], hover_color=SUAVE[0], text_color=TEXTO[0],
+            border_width=1, border_color=BORDE[0], height=36, corner_radius=10,
+            font=(F_TEXTO, 12, "bold")
         )
         self.btn_toggle_cam.pack(side="left", padx=(0, 10))
 
@@ -184,7 +195,8 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
         # Botón Login
         btn_login = ctk.CTkButton(
             h_right, text="🔒 Acceso con Login", command=self._cerrar_ventana,
-            fg_color="white", hover_color="#F3F4F6", text_color=PRIMARIO[0], height=36, corner_radius=10, font=(F_TEXTO, 12, "bold")
+            fg_color=ACENTO[0], hover_color=ACENTO_H[0], text_color=PRIMARIO[0],
+            height=36, corner_radius=10, font=(F_TEXTO, 12, "bold")
         )
         btn_login.pack(side="left")
 
@@ -196,7 +208,7 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
         self.l_reloj = ctk.CTkLabel(barra_info, text="", font=(F_TEXTO, 12, "bold"), text_color=TEXTO[0])
         self.l_reloj.pack(side="left", padx=24)
 
-        self.l_turno = ctk.CTkLabel(barra_info, text="Turno Activo: --", font=(F_TEXTO, 12, "bold"), text_color=PRIMARIO[0])
+        self.l_turno = ctk.CTkLabel(barra_info, text="Turno Activo: --", font=(F_TEXTO, 12, "bold"), text_color=ACENTO[0])
         self.l_turno.pack(side="right", padx=24)
 
         # 3. Contenedor Principal
@@ -233,7 +245,7 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             placeholder_text="Pase el carnet por el lector o escriba la cédula...",
             height=44,
             font=(F_TEXTO, 14),
-            fg_color="#FAFAFA",
+            fg_color=SUAVE_BG[0],
             border_color=BORDE[0],
             text_color=TEXTO[0]
         )
@@ -245,8 +257,9 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             fila_input,
             text="Marcar",
             command=self.procesar_marcaje,
-            fg_color=PRIMARIO[0],
-            hover_color=PRIMARIO_H[0],
+            fg_color=ACENTO[0],
+            hover_color=ACENTO_H[0],
+            text_color=PRIMARIO[0],
             height=44,
             width=100,
             font=(F_TEXTO, 13, "bold"),
@@ -285,7 +298,8 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
 
         self.badge_estado = ctk.CTkLabel(
             fila_persona, text="EN ESPERA", font=(F_TEXTO, 11, "bold"),
-            fg_color="#F3F4F6", text_color=SUAVE, corner_radius=8, width=110, height=30
+            fg_color=SUAVE_BG[0], text_color=SUAVE[0], corner_radius=8, width=110, height=30,
+            border_width=1, border_color=BORDE[0]
         )
         self.badge_estado.pack(side="right")
 
@@ -307,18 +321,21 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
 
         self.lbl_cam_status = ctk.CTkLabel(
             f_cam_header, text="🟡 Iniciando...",
-            font=(F_TEXTO, 11, "bold"), text_color="#D97706"
+            font=(F_TEXTO, 11, "bold"), text_color=ACENTO[0]
         )
         self.lbl_cam_status.pack(side="right")
 
         # Contenedor del video/foto en vivo
-        f_video_box = ctk.CTkFrame(f_cam_inner, fg_color="#111827", corner_radius=10, height=160)
+        f_video_box = ctk.CTkFrame(
+            f_cam_inner, fg_color="#08082D", corner_radius=10, height=160,
+            border_width=1, border_color=ACENTO[0]
+        )
         f_video_box.pack(fill="x", pady=(0, 8))
         f_video_box.pack_propagate(False)
 
         self.lbl_video = ctk.CTkLabel(
             f_video_box, text="Conectando cámara web...",
-            font=(F_TEXTO, 12), text_color="#9CA3AF", cursor="hand2"
+            font=(F_TEXTO, 12), text_color=SUAVE[0], cursor="hand2"
         )
         self.lbl_video.pack(fill="both", expand=True)
         # Hacer clic sobre el video también toma la foto
@@ -329,8 +346,9 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             f_cam_inner,
             text="📸 Tomar Foto y Leer Carnet",
             command=self.tomar_foto_y_leer,
-            fg_color="#10B981",
-            hover_color="#059669",
+            fg_color=ACENTO[0],
+            hover_color=ACENTO_H[0],
+            text_color=PRIMARIO[0],
             height=42,
             corner_radius=10,
             font=(F_TEXTO, 13, "bold")
@@ -355,7 +373,25 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
         ).pack(anchor="w", padx=16, pady=(10, 6))
 
         columnas = ("hora", "cedula", "nombre", "tipo", "seccion", "estado")
-        self.tabla = ttk.Treeview(f_tabla, columns=columnas, show="headings", height=7, selectmode="none")
+        estilo = ttk.Style(self)
+        estilo.configure(
+            "Kiosco.Treeview", background=CARD[0], fieldbackground=CARD[0],
+            foreground=TEXTO[0], rowheight=32, borderwidth=0, font=(F_TEXTO, 10)
+        )
+        estilo.configure(
+            "Kiosco.Treeview.Heading", background=CARD[0], foreground=ACENTO[0],
+            font=(F_TEXTO, 10, "bold"), relief="flat", padding=(8, 8)
+        )
+        estilo.map(
+            "Kiosco.Treeview", background=[("selected", ACENTO[0])],
+            foreground=[("selected", PRIMARIO[0])]
+        )
+        estilo.map("Kiosco.Treeview.Heading", background=[("active", PRIMARIO_H[0])])
+        self.tabla = ttk.Treeview(
+            f_tabla, columns=columnas, show="headings", height=7, selectmode="none",
+            style="Kiosco.Treeview"
+        )
+        self.tabla.tag_configure("par", background=SUAVE_BG[0])
         self.tabla.heading("hora", text="Hora")
         self.tabla.heading("cedula", text="Cédula")
         self.tabla.heading("nombre", text="Nombre y Apellido")
@@ -381,8 +417,10 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
         if self.camara_activa:
             return
         self.camara_activa = True
-        self.lbl_cam_status.configure(text="🟡 Conectando cámara...", text_color="#D97706")
-        self.btn_toggle_cam.configure(text="📷 Apagar Cámara", fg_color="#374151", hover_color="#1F2937")
+        self.lbl_cam_status.configure(text="Conectando cámara...", text_color=ACENTO[0])
+        self.btn_toggle_cam.configure(
+            text="📷 Apagar Cámara", fg_color=CARD[0], hover_color=SUAVE[0]
+        )
 
         threading.Thread(target=self._hilo_captura_camara, daemon=True).start()
         self._actualizar_visor_camara()
@@ -397,7 +435,7 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
 
             if not cap.isOpened():
                 self.after(0, lambda: self.lbl_cam_status.configure(
-                    text="❌ Cámara no disponible", text_color="#DC2626"
+                    text="Cámara no disponible", text_color="#E6C7D0"
                 ))
                 self.camara_activa = False
                 return
@@ -407,7 +445,7 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             self.cap = cap
 
             self.after(0, lambda: self.lbl_cam_status.configure(
-                text="🟢 Lista para capturar", text_color="#059669"
+                text="Lista para capturar", text_color=ACENTO[0]
             ))
 
             while self.camara_activa and self.cap and self.cap.isOpened():
@@ -498,14 +536,14 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             self._iniciar_camara()
             self.lbl_cam_feedback.configure(
                 text="Iniciando cámara... intente nuevamente en 1 segundo.",
-                text_color="#D97706"
+                text_color=ACENTO[0]
             )
             return
 
         with self.frame_lock:
             if self.ultimo_frame_nativo is None:
                 self.lbl_cam_feedback.configure(
-                    text="Esperando imagen de la cámara web...", text_color="#D97706"
+                    text="Esperando imagen de la cámara web...", text_color=ACENTO[0]
                 )
                 return
             foto = self.ultimo_frame_nativo.copy()
@@ -513,9 +551,9 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
         # Congelar el visor con la foto capturada
         self.foto_congelada = True
         self.btn_capturar.configure(state="disabled", text="⏳ Analizando foto...")
-        self.lbl_cam_status.configure(text="📸 Foto Capturada", text_color="#2563EB")
+        self.lbl_cam_status.configure(text="📸 Foto Capturada", text_color=ACENTO[0])
         self.lbl_cam_feedback.configure(
-            text="🔍 Analizando imagen del carnet...", text_color="#2563EB"
+            text="🔍 Analizando imagen del carnet...", text_color=ACENTO[0]
         )
 
         self._mostrar_frame_en_visor(foto)
@@ -540,19 +578,19 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
                                 [puntos.bottom_right.x, puntos.bottom_right.y],
                                 [puntos.bottom_left.x, puntos.bottom_left.y]
                             ], dtype=np.int32)
-                            cv2.polylines(foto_res, [pts], True, (0, 230, 0), 4)
+                            cv2.polylines(foto_res, [pts], True, (232, 225, 86), 4)
                         elif isinstance(puntos, (list, tuple, np.ndarray)):
                             pts = np.array(puntos, dtype=np.int32)
-                            cv2.polylines(foto_res, [pts], True, (0, 230, 0), 4)
+                            cv2.polylines(foto_res, [pts], True, (232, 225, 86), 4)
                     except Exception:
                         pass
 
                 self.after(0, lambda: self._mostrar_frame_en_visor(foto_res))
                 self.after(0, lambda: self.lbl_cam_status.configure(
-                    text="✅ Carnet Leído", text_color="#059669"
+                    text="Carnet leído", text_color=ACENTO[0]
                 ))
                 self.after(0, lambda c=codigo: self.lbl_cam_feedback.configure(
-                    text=f"✓ Código extraído con éxito: {c}", text_color="#059669"
+                    text=f"✓ Código extraído con éxito: {c}", text_color=ACENTO[0]
                 ))
 
                 # Registrar asistencia
@@ -564,11 +602,11 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             else:
                 _beep_alerta()
                 self.after(0, lambda: self.lbl_cam_status.configure(
-                    text="⚠️ Código No Detectado", text_color="#DC2626"
+                    text="Código no detectado", text_color="#E6C7D0"
                 ))
                 self.after(0, lambda: self.lbl_cam_feedback.configure(
                     text="⚠️ No se apreció el código con nitidez. Mantenga firme el carnet y presione 'Tomar Foto' de nuevo.",
-                    text_color="#DC2626"
+                    text_color="#E6C7D0"
                 ))
                 time.sleep(1.8)
 
@@ -580,9 +618,9 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
 
     def _confirmar_auto_escaneo(self, codigo, frame):
         """Maneja lecturas cuando el usuario sostiene el carnet firme frente a la cámara."""
-        self.lbl_cam_status.configure(text="✅ Auto-Detectado", text_color="#059669")
+        self.lbl_cam_status.configure(text="Carnet detectado", text_color=ACENTO[0])
         self.lbl_cam_feedback.configure(
-            text=f"✓ Código detectado: {codigo}", text_color="#059669"
+            text=f"✓ Código detectado: {codigo}", text_color=ACENTO[0]
         )
         self.procesar_marcaje(codigo)
 
@@ -590,7 +628,7 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
         """Restaura el botón y etiquetas para la siguiente captura."""
         self.btn_capturar.configure(state="normal", text="📸 Tomar Foto y Leer Carnet")
         if self.camara_activa:
-            self.lbl_cam_status.configure(text="🟢 Lista para capturar", text_color="#059669")
+            self.lbl_cam_status.configure(text="Lista para capturar", text_color=ACENTO[0])
             self.lbl_cam_feedback.configure(
                 text="Apunte el código del carnet hacia la cámara y presione 'Tomar Foto' (o Espacio).",
                 text_color=SUAVE
@@ -608,7 +646,10 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             self.cap = None
         self.lbl_video.configure(image="", text="📹 Cámara apagada\nHaga clic en 'Encender Cámara'")
         self.lbl_cam_status.configure(text="⚪ Cámara inactiva", text_color=SUAVE)
-        self.btn_toggle_cam.configure(text="📷 Encender Cámara", fg_color="#10B981", hover_color="#059669")
+        self.btn_toggle_cam.configure(
+            text="📷 Encender Cámara", fg_color=ACENTO[0], hover_color=ACENTO_H[0],
+            text_color=PRIMARIO[0]
+        )
 
     def _toggle_camara(self):
         if self.camara_activa:
@@ -697,51 +738,51 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
             self.l_nombre.configure(text=p_nombre)
             self.l_detalle.configure(text=f"{res['tipo_persona']} · {res['detalle']} · C.I. {res['cedula']}")
 
-            color_badge = "#DEF7EC" if res["estado"] == "Presente" else "#FEF3C7"
-            color_txt = "#03543F" if res["estado"] == "Presente" else "#92400E"
+            color_badge = SUAVE_BG[0] if res["estado"] == "Presente" else "#24151C"
+            color_txt = ACENTO[0] if res["estado"] == "Presente" else "#E6C7D0"
 
             self.badge_estado.configure(
                 text=f"{res['tipo']} · {res['estado']}",
                 fg_color=color_badge,
                 text_color=color_txt
             )
-            self.card_res.configure(border_color="#10B981")
+            self.card_res.configure(border_color=ACENTO[0])
             self.lbl_cam_feedback.configure(
                 text=f"✓ {res['tipo']} registrado · {p_nombre}",
-                text_color="#059669"
+                text_color=ACENTO[0]
             )
             self.after(1800, lambda: self.card_res.configure(border_color=BORDE[0]))
             self.cargar_feed_hoy()
 
         elif res.get("duplicado"):
             _beep_alerta()
-            self.avatar.configure(text="ℹ", fg_color="#F59E0B")
+            self.avatar.configure(text="ℹ", fg_color=AVISO[0])
             p_nom = res.get("persona") or "Persona"
             self.l_nombre.configure(text=p_nom)
             self.l_detalle.configure(text=res.get("mensaje", "Marcaje duplicado detectado para esta fecha y turno."))
-            self.badge_estado.configure(text="YA REGISTRADO", fg_color="#FEF3C7", text_color="#92400E")
-            self.card_res.configure(border_color="#F59E0B")
-            self.lbl_cam_feedback.configure(text="ℹ " + res.get("mensaje", "Marcaje duplicado"), text_color="#92400E")
+            self.badge_estado.configure(text="YA REGISTRADO", fg_color="#24151C", text_color="#E6C7D0")
+            self.card_res.configure(border_color=AVISO[0])
+            self.lbl_cam_feedback.configure(text="ℹ " + res.get("mensaje", "Marcaje duplicado"), text_color="#E6C7D0")
             self.cargar_feed_hoy()
 
         elif res.get("ya_completado"):
             _beep_alerta()
-            self.avatar.configure(text="✓", fg_color="#F59E0B")
+            self.avatar.configure(text="✓", fg_color=AVISO[0])
             self.l_nombre.configure(text=res["persona"])
             self.l_detalle.configure(text="Esta persona ya completó tanto su entrada como su salida de hoy.")
-            self.badge_estado.configure(text="JORNADA LISTA", fg_color="#FEF3C7", text_color="#92400E")
-            self.card_res.configure(border_color="#F59E0B")
-            self.lbl_cam_feedback.configure(text="⚠ La jornada de hoy ya está completa", text_color="#92400E")
+            self.badge_estado.configure(text="JORNADA LISTA", fg_color="#24151C", text_color="#E6C7D0")
+            self.card_res.configure(border_color=AVISO[0])
+            self.lbl_cam_feedback.configure(text="⚠ La jornada de hoy ya está completa", text_color="#E6C7D0")
             self.cargar_feed_hoy()
 
         else:
             _beep_alerta()
-            self.avatar.configure(text="?", fg_color=ACENTO[0])
+            self.avatar.configure(text="?", fg_color=AVISO[0])
             self.l_nombre.configure(text=f"Cédula {cedula} no encontrada")
             self.l_detalle.configure(text="El carnet no se encuentra registrado en el sistema escolar.")
-            self.badge_estado.configure(text="NO REGISTRADO", fg_color="#FEE2E2", text_color="#991B1B")
-            self.card_res.configure(border_color="#EF4444")
-            self.lbl_cam_feedback.configure(text="✕ Carnet no reconocido", text_color="#DC2626")
+            self.badge_estado.configure(text="NO REGISTRADO", fg_color="#24151C", text_color="#E6C7D0")
+            self.card_res.configure(border_color=AVISO[0])
+            self.lbl_cam_feedback.configure(text="✕ Carnet no reconocido", text_color="#E6C7D0")
 
     def _actualizar_reloj(self):
         ahora = datetime.now()
@@ -781,7 +822,7 @@ class VentanaTerminalMarcaje(ctk.CTkToplevel):
                     r.get("tipo_persona", "") or "—",
                     r.get("detalle", "") or "—",
                     r.get("estado", "") or "Presente"
-                ))
+                ), tags=("par",) if len(self.tabla.get_children()) % 2 else ())
         except Exception as e:
             print("Error cargando feed de hoy:", e)
 

@@ -6,7 +6,8 @@ from tkinter import messagebox
 import config
 from db import fmt_hora, resolver_turno_persona
 from tema import (
-    ACENTO, AVISO, ESTADO_COLOR, F_TEXTO, F_TITULO, OK, PRIMARIO, PRIMARIO_H, SUAVE, TEXTO
+    ACENTO, AVISO, BORDE, CARD, ESTADO_COLOR, F_TEXTO, F_TITULO, OK, PRIMARIO,
+    SUAVE, SUAVE_BG, TEXTO
 )
 from .ui_utils import Vista, seguro, tarjeta, campo, boton, etiqueta, area, chip, feedback_boton
 import contingencia
@@ -42,19 +43,22 @@ class Marcaje(Vista):
 
         self.sw_escaner = ctk.CTkSwitch(
             barra_protocolo, text="Modo Escáner / Lector de Carnets (Automático)",
-            font=(F_TEXTO, 13, "bold"), text_color=TEXTO, progress_color=PRIMARIO[0]
+            font=(F_TEXTO, 13, "bold"), text_color=TEXTO, progress_color=ACENTO[0]
         )
         self.sw_escaner.select()  # Activado por defecto para facilitar el flujo en garita
         self.sw_escaner.pack(side="left")
 
         # Indicador visual de escáner manos libres
-        self.badge_escaner = ctk.CTkFrame(barra_protocolo, fg_color="#D1FAE5", corner_radius=12)
+        self.badge_escaner = ctk.CTkFrame(
+            barra_protocolo, fg_color=SUAVE_BG, corner_radius=12,
+            border_width=1, border_color=BORDE
+        )
         self.badge_escaner.pack(side="left", padx=14)
         ctk.CTkLabel(
             self.badge_escaner,
             text="🟢 Captura Automática Manos Libres Activa (Sin Clic)",
             font=(F_TEXTO, 11, "bold"),
-            text_color="#065F46"
+            text_color=ACENTO
         ).pack(padx=10, pady=4)
 
         # Botón e indicador de contingencia
@@ -70,9 +74,9 @@ class Marcaje(Vista):
             barra_protocolo,
             text="Portal móvil",
             command=self._abrir_qr_movil,
-            fg_color=PRIMARIO[0],
-            hover_color=PRIMARIO_H[0],
-            text_color="white",
+            fg_color=ACENTO[0],
+            hover_color=ACENTO[1],
+            text_color=PRIMARIO[0],
             height=32,
             corner_radius=16,
             font=(F_TEXTO, 11, "bold"),
@@ -142,7 +146,7 @@ class Marcaje(Vista):
 
         self.msg = ctk.CTkLabel(
             res, text="", font=(F_TEXTO, 13, "bold"), anchor="w", wraplength=550,
-            corner_radius=10, height=38
+            corner_radius=10, height=38, border_width=1, border_color=BORDE
         )
         self.msg.pack(fill="x", padx=20, pady=(4, 14))
 
@@ -154,13 +158,15 @@ class Marcaje(Vista):
             fill="x", padx=20, pady=(16, 8))
 
         # Tarjeta informativa de horarios institucionales
-        self.f_horarios_info = ctk.CTkFrame(der, fg_color=("#E0F2FE", "#162C55"), corner_radius=10)
+        self.f_horarios_info = ctk.CTkFrame(
+            der, fg_color=CARD, corner_radius=10, border_width=1, border_color=BORDE
+        )
         self.f_horarios_info.pack(fill="x", padx=18, pady=(0, 10))
         self.l_horarios_txt = ctk.CTkLabel(
             self.f_horarios_info,
             text="",
             font=(F_TEXTO, 11),
-            text_color=("#0F2042", "#38BDF8"),
+            text_color=ACENTO,
             justify="left",
             anchor="w"
         )
@@ -171,7 +177,7 @@ class Marcaje(Vista):
             ("Presente", OK, "Llegada puntual según su turno"),
             ("Retraso", AVISO, "Entrada posterior a la hora límite"),
             ("Salida Temprana", AVISO, "Salida antes del horario mínimo"),
-            ("Ausente", ACENTO, "Inasistencia registrada")
+            ("Ausente", AVISO, "Inasistencia registrada")
         ]:
             r = ctk.CTkFrame(der, fg_color="transparent")
             r.pack(fill="x", padx=20, pady=4)
@@ -184,7 +190,7 @@ class Marcaje(Vista):
             font=(F_TEXTO, 11), wraplength=260
         ).pack(fill="x", padx=20, pady=(12, 10))
 
-        ctk.CTkFrame(der, height=1, fg_color="#E2E8F0").pack(fill="x", padx=20, pady=8)
+        ctk.CTkFrame(der, height=1, fg_color=BORDE).pack(fill="x", padx=20, pady=8)
 
         ctk.CTkLabel(der, text="Protocolo de Contingencia", font=(F_TITULO, 15, "bold"), text_color=TEXTO, anchor="w").pack(
             fill="x", padx=20, pady=(4, 4))
@@ -275,16 +281,18 @@ class Marcaje(Vista):
             color_texto = color
 
         if not texto:
-            self.msg.configure(text="", fg_color="transparent")
+            self.msg.configure(text="", fg_color="transparent", border_color="transparent")
             return
 
         if color_texto in (OK[0], OK[1]):
-            fondo, borde = ("#DCFCE7", "#86EFAC")
+            fondo, borde, texto_color = (SUAVE_BG[0], BORDE[0], ACENTO[0])
         elif color_texto in (AVISO[0], AVISO[1]):
-            fondo, borde = ("#FEF3C7", "#FCD34D")
+            fondo, borde, texto_color = ("#24151C", AVISO[0], "#E6C7D0")
         else:
-            fondo, borde = ("#E0F2FE", "#7DD3FC")
-        self.msg.configure(text=f"  {texto}", text_color=color_texto, fg_color=fondo)
+            fondo, borde, texto_color = (CARD[0], BORDE[0], ACENTO[0])
+        self.msg.configure(
+            text=f"  {texto}", text_color=texto_color, fg_color=fondo, border_color=borde
+        )
 
     def procesar_lector(self):
         """Punto de entrada cuando se escanea un carnet o se presiona Enter."""
@@ -325,10 +333,10 @@ class Marcaje(Vista):
 
         if not p:
             _beep_alerta()
-            self.avatar.configure(text="?", fg_color=ACENTO)
+            self.avatar.configure(text="?", fg_color=AVISO)
             self.l_nombre.configure(text=f"Cédula {cedula} no encontrada")
             self.l_detalle.configure(text="No está registrado en la base de datos.")
-            self._aviso(f"Carnet no reconocido: C.I. {cedula}", ACENTO)
+            self._aviso(f"Carnet no reconocido: C.I. {cedula}", AVISO)
             self.e_ced.delete(0, "end")
             self.e_ced.focus_set()
             return
@@ -400,7 +408,7 @@ class Marcaje(Vista):
 
         else:
             _beep_alerta()
-            self._aviso(f"ℹ {p['nombre']} ya completó su entrada ({fmt_hora(ex['hora_entrada'])}) y salida ({fmt_hora(ex['hora_salida'])}) hoy.", PRIMARIO[0])
+            self._aviso(f"ℹ {p['nombre']} ya completó su entrada ({fmt_hora(ex['hora_entrada'])}) y salida ({fmt_hora(ex['hora_salida'])}) hoy.", AVISO)
 
         self.e_ced.delete(0, "end")
         self.e_ced.focus_set()
@@ -435,7 +443,7 @@ class Marcaje(Vista):
         p = self.db.persona_por_cedula(cedula)
         if not p:
             self.persona = None
-            self.avatar.configure(text="?", fg_color=ACENTO)
+            self.avatar.configure(text="?", fg_color=AVISO)
             self.l_nombre.configure(text="Cédula no encontrada")
             self.l_detalle.configure(text="Verifique el número o regístrela en el módulo Personas.")
             self.l_hoy.configure(text="")
